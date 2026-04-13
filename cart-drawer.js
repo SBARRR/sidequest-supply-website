@@ -199,13 +199,17 @@
 
     function buildTallyCheckoutUrl(items) {
         const pricing = buildPricingSummary(items);
+        const totalFormatted = cart.formatPrice(pricing.total);
+        // Ensure total_raw is a plain number string, rounded to 2 decimals, no $ or commas
+        const totalRaw = pricing.total.toFixed(2);
         const params = new URLSearchParams({
             order_id: generateOrderId(),
             items_summary: buildItemsSummary(items),
             subtotal: cart.formatPrice(pricing.subtotal),
             shipping: cart.formatPrice(pricing.shippingCost),
             tax: cart.formatPrice(pricing.taxAmount),
-            total: cart.formatPrice(pricing.total)
+            total: totalFormatted,
+            total_raw: totalRaw
         });
 
         return `${TALLY_CHECKOUT_URL}?${params.toString()}`;
