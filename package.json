@@ -1,0 +1,11 @@
+{
+  "name": "sidequest-supply-site",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/generate-gif-manifest.js"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  }
+}

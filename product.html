@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Product - Sidequest Supply</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="product-page">
+    <header>
+        <div class="header-actions" aria-label="Header actions">
+            <button class="header-icon-button header-cart-button" type="button" aria-label="View cart">
+                <img class="header-cart-icon" src="icons/cart/cart.svg" alt="">
+            </button>
+            <button class="header-icon-button header-menu-button" type="button" aria-label="Open menu">
+                <span class="header-menu-icon" aria-hidden="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </span>
+            </button>
+        </div>
+        <h1>Sidequest Supply</h1>
+        <nav class="breadcrumbs" aria-label="Breadcrumb">
+            <a href="index.html">Home</a>
+            <span aria-hidden="true">&rsaquo;</span>
+            <a href="catalogue.html">Shop</a>
+            <span aria-hidden="true">&rsaquo;</span>
+            <span id="product-breadcrumb-label" aria-current="page">Product</span>
+        </nav>
+    </header>
+    <main>
+        <section id="product-not-found" class="product-not-found" hidden>
+            <h2>Product Not Found</h2>
+            <p>We could not find that product.</p>
+            <a href="catalogue.html" class="product-page-link">Back to Shop</a>
+        </section>
+
+        <article id="product-view" class="product-view" hidden>
+            <section class="product-layout">
+                <div class="product-media">
+                    <div id="product-main-media" class="product-main-media"></div>
+                    <div id="product-thumb-gallery" class="product-thumb-gallery"></div>
+                </div>
+
+                <div class="product-details">
+                    <div class="product-title-price-row">
+                        <h2 id="product-title" class="product-title"></h2>
+                        <p id="product-price" class="product-price"></p>
+                    </div>
+
+                    <p id="product-description" class="product-description"></p>
+
+                    <section id="product-colors-section" class="product-block">
+                        <h3 class="product-block-title">Colors</h3>
+                        <div id="variant-picker" class="variant-picker"></div>
+                    </section>
+
+                    <section class="product-block">
+                        <h3 class="product-block-title">Quantity</h3>
+                        <div class="quantity-pill" aria-label="Quantity selector">
+                            <button id="qty-minus" type="button" class="qty-button" aria-label="Decrease quantity">-</button>
+                            <span id="qty-value" class="qty-value">1</span>
+                            <button id="qty-plus" type="button" class="qty-button" aria-label="Increase quantity">+</button>
+                        </div>
+                    </section>
+
+                    <div class="product-action-row">
+                        <button id="add-to-cart-button" type="button" class="product-action-button">Add to Cart</button>
+                        <button id="checkout-button" type="button" class="product-action-button">View Cart</button>
+                    </div>
+
+                    <section class="shipping-info">
+                        <p>Orders ship within 1–3 business days. Once your order is on the way, tracking information will be sent to you via your preferred contact method.</p>
+                    </section>
+                </div>
+            </section>
+
+            <section class="related-products-section">
+                <h3 class="related-products-title">You may also like</h3>
+                <div id="related-products-grid" class="related-products-grid"></div>
+            </section>
+        </article>
+    </main>
+    <footer>
+        <p>&copy; 2026 Sidequest Supply. All rights reserved.</p>
+    </footer>
+    <script src="viewport-fix.js"></script>
+    <script src="header-gif.js"></script>
+    <script src="product-analytics.js"></script>
+    <script src="cart.js"></script>
+    <script src="cart-feedback.js"></script>
+    <script src="cart-drawer.js"></script>
+    <script src="menu-drawer.js"></script>
+    <script src="product.js"></script>
+</body>
+</html>

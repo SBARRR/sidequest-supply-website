@@ -1,0 +1,156 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Product Catalogue - Sidequest Supply</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="catalogue-page">
+    <header>
+        <div class="header-actions" aria-label="Header actions">
+            <button class="header-icon-button header-cart-button" type="button" aria-label="View cart">
+                <img class="header-cart-icon" src="icons/cart/cart.svg" alt="">
+            </button>
+            <button class="header-icon-button header-menu-button" type="button" aria-label="Open menu">
+                <span class="header-menu-icon" aria-hidden="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </span>
+            </button>
+        </div>
+        <h1>Sidequest Supply</h1>
+        <nav class="breadcrumbs" aria-label="Breadcrumb">
+            <a href="index.html">Home</a>
+            <span aria-hidden="true">&rsaquo;</span>
+            <a href="catalogue.html" aria-current="page">Shop</a>
+        </nav>
+    </header>
+    <main>
+        <section id="catalogue">
+            <div class="shop-by-row" aria-label="Shop by category">
+                <span class="shop-by-label">Browse:</span>
+                <div class="shop-by-chips">
+                    <button class="category-chip active" type="button">All</button>
+                    <button class="category-chip" type="button">Keychains</button>
+                    <button class="category-chip" type="button">Lighter Sleeves</button>
+                    <button class="category-chip" type="button">Custom Orders</button>
+                </div>
+            </div>
+            <button id="catalogue-clear-filters" class="catalogue-clear-filters" type="button" hidden>
+                <span>Clear filters</span>
+                <span class="catalogue-clear-filters-x" aria-hidden="true">&times;</span>
+            </button>
+            <div id="catalogue-grid" class="catalogue-grid"></div>
+            <p id="catalogue-empty-state" class="catalogue-empty-state" hidden>No products match your current filters.</p>
+            <button id="load-more-products" class="load-more-products" type="button">Load More</button>
+        </section>
+    </main>
+    <button class="filter-tab" type="button" aria-controls="filter-drawer" aria-expanded="false">
+        <span class="filter-tab-icon-row">
+            <span class="filter-tab-arrow" aria-hidden="true">&#9664;</span>
+            <span class="filter-tab-count" aria-live="polite">(0)</span>
+        </span>
+        <span class="filter-tab-text">Sort</span>
+    </button>
+    <div class="drawer-overlay" hidden></div>
+    <aside id="filter-drawer" class="filter-drawer" aria-hidden="true">
+        <div class="filter-drawer-header">
+            <h2>Sort & Filter</h2>
+            <button class="drawer-close" type="button" aria-label="Close filter drawer">&times;</button>
+        </div>
+        <div class="filter-drawer-body">
+            <div class="filter-drawer-content">
+                <section class="filter-section" aria-labelledby="sort-options-heading">
+                    <h3 id="sort-options-heading" class="filter-section-title">Sort</h3>
+                    <div class="filter-options">
+                        <label class="filter-option">
+                            <span>Price: Low to High</span>
+                            <input type="radio" name="sort" value="price-low-to-high">
+                        </label>
+                        <label class="filter-option">
+                            <span>Price: High to Low</span>
+                            <input type="radio" name="sort" value="price-high-to-low">
+                        </label>
+                    </div>
+                </section>
+                <section class="filter-section" aria-labelledby="filter-options-heading">
+                    <h3 id="filter-options-heading" class="filter-section-title">Filter</h3>
+                    <div class="filter-options">
+                        <label class="filter-option">
+                            <span>New</span>
+                            <input type="checkbox" name="filter" value="new">
+                        </label>
+                        <label class="filter-option">
+                            <span>Sale</span>
+                            <input type="checkbox" name="filter" value="sale">
+                        </label>
+                        <label class="filter-option">
+                            <span>Popular</span>
+                            <input type="checkbox" name="filter" value="popular">
+                        </label>
+                        <label class="filter-option">
+                            <span>Favorites</span>
+                            <input type="checkbox" name="filter" value="favorites">
+                        </label>
+                    </div>
+                </section>
+                <section class="filter-section" aria-labelledby="price-options-heading">
+                    <h3 id="price-options-heading" class="filter-section-title">Price</h3>
+                    <div class="filter-options">
+                        <label class="filter-option">
+                            <span>$5 &amp; Under</span>
+                            <input type="radio" name="price-range" value="5-under">
+                        </label>
+                        <label class="filter-option">
+                            <span>$10 &amp; Under</span>
+                            <input type="radio" name="price-range" value="10-under">
+                        </label>
+                        <label class="filter-option">
+                            <span>$10+</span>
+                            <input type="radio" name="price-range" value="10-plus">
+                        </label>
+                    </div>
+                    <div class="price-slider-wrap">
+                        <label for="price-slider" class="price-slider-label">
+                            Price Slider
+                            <span id="price-slider-value" class="price-slider-value">($0 - $0)</span>
+                        </label>
+                        <input id="price-slider" class="price-slider" type="range" min="0" max="100" step="1" value="0">
+                    </div>
+                </section>
+                <section class="filter-section" aria-labelledby="search-options-heading" hidden>
+                    <h3 id="search-options-heading" class="filter-section-title">Search</h3>
+                    <div class="search-input-wrap">
+                        <input
+                            id="filter-search"
+                            class="search-input"
+                            type="search"
+                            name="search"
+                            placeholder="Search products"
+                            autocomplete="off"
+                        >
+                    </div>
+                </section>
+            </div>
+        </div>
+        <div class="filter-drawer-footer">
+            <button class="filter-footer-button apply-button" type="button">Apply</button>
+            <button class="filter-footer-button clear-button" type="button">Clear All</button>
+        </div>
+    </aside>
+    <footer>
+        <p>&copy; 2026 Sidequest Supply. All rights reserved.</p>
+    </footer>
+    <script src="viewport-fix.js"></script>
+    <script src="header-gif.js"></script>
+    <script src="product-analytics.js"></script>
+    <script src="cart.js"></script>
+    <script src="cart-feedback.js"></script>
+    <script src="cart-drawer.js"></script>
+    <script src="menu-drawer.js"></script>
+    <script src="catalogue.js"></script>
+</body>
+</html>
+

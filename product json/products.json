@@ -1,0 +1,153 @@
+[
+  {
+    "name": "I Heart MILFs",
+    "id": "milfs0",
+    "price": 5,
+    "compare_at": null,
+    "created_at_yyyy_mm_dd": "2026-04-11",
+    "popular": false,
+    "description": "Respectfully.",
+    "category": "keychain",
+    "weight_oz": 0.32,
+    "main_image": "",
+    "gallery_images": [],
+    "tags": ["milf", "milfs", "heart", "love", "funny", "novelty", "adult", "humor", "horny", "black", "red", "keychain", "gift"],
+    "variants": []
+  },
+  {
+    "name": "Classic Rap Logo",
+    "id": "wu0",
+    "price": 5,
+    "compare_at": null,
+    "created_at_yyyy_mm_dd": "2026-04-11",
+    "popular": false,
+    "description": "A classic music-inspired keychain.",
+    "category": "keychain",
+    "weight_oz": 0.28,
+    "main_image": "",
+    "gallery_images": [],
+    "tags": ["music", "hiphop", "rap", "classic", "black", "gold", "logo", "keychain", "retro", "statement", "90", "1990"],
+    "variants": []
+  },
+  {
+    "name": "Trippy Mushroom",
+    "id": "shroom0",
+    "price": 5,
+    "compare_at": null,
+    "created_at_yyyy_mm_dd": "2026-04-11",
+    "popular": false,
+    "description": "A psychedelic mushroom inspired keychain.",
+    "category": "keychain",
+    "weight_oz": 0.39,
+    "main_image": "",
+    "gallery_images": [],
+    "tags": ["mushroom", "trippy", "psychedelic", "drippy", "melty", "shroom", "weirdcore", "surreal", "stoner", "festival", "rave", "chaotic", "whimsical", "novelty", "keychain", "accessory"],
+    "variants": []
+  },
+  {
+    "name": "Let Me Be Weird in Peace",
+    "id": "alien0",
+    "price": 3,
+    "compare_at": 5,
+    "created_at_yyyy_mm_dd": "2026-04-11",
+    "popular": true,
+    "description": "A polite request from another planet.",
+    "category": "keychain",
+    "weight_oz": 0.49,
+    "main_image": "",
+    "gallery_images": [],
+    "tags": ["alien", "alien head", "extraterrestrial", "ufo", "space", "cosmic", "galaxy", "weird", "weirdo", "stay weird", "let me be weird in peace", "weird in peace", "leave me alone", "dont talk to me", "introvert", "antisocial", "strange", "oddity", "unbothered", "peace", "funny", "sarcastic", "novelty", "statement piece", "green alien", "purple and green", "festival vibe", "rave vibe", "trippy", "offbeat"],
+    "variants": []
+  },
+  {
+    "name": "Stay Trippy Little Hippie",
+    "id": "hippieorange0",
+    "price": 5,
+    "compare_at": null,
+    "created_at_yyyy_mm_dd": "2026-04-11",
+    "popular": false,
+    "description": "A groovy retro VW van inspired keychain.",
+    "category": "keychain",
+    "weight_oz": 0.49,
+    "main_image": "",
+    "gallery_images": [],
+    "tags": ["stay trippy little hippie", "hippie", "trippy", "retro van", "peace van", "flower power", "boho", "psychedelic", "groovy", "peace sign", "daisy", "cute", "colorful", "festival", "rave", "stoner", "novelty", "statement piece", "accessory"],
+    "variants": [
+      {
+        "id": "hippieyellow0",
+        "price": 5,
+        "compare_at": null,
+        "main_image": "",
+        "gallery_images": []
+      }
+    ]
+  },
+  {
+    "name": "Grenade Lighter Sleeve",
+    "id": "grenade0",
+    "price": 10,
+    "compare_at": null,
+    "created_at_yyyy_mm_dd": "2026-04-11",
+    "popular": true,
+    "description": "A grenade-style sleeve made for Clipper lighters, with a nice chunky grip. Fits both classic and jet-size Clipper lighters.",
+    "category": "lighter sleeve",
+    "weight_oz": 0.85,
+    "main_image": "",
+    "gallery_images": [],
+    "tags": ["grenade", "clipper", "lighter", "sleeve", "cover", "green", "black", "novelty", "bold", "gift", "classic", "jet", "size", "keychain"],
+    "variants": []
+  },
+  {
+    "name": "Hoodie Lighter Sleeve",
+    "id": "hoodieblue0",
+    "price": 7,
+    "compare_at": 10,
+    "created_at_yyyy_mm_dd": "2026-04-11",
+    "popular": true,
+    "description": "A hoodie sleeve for standard-size Bic lighters. Turns your lighter into a chill guy.",
+    "category": "lighter sleeve",
+    "weight_oz": 1.13,
+    "main_image": "",
+    "gallery_images": [],
+    "tags": ["bic", "lighter", "hoodie", "sleeve", "cover", "standard", "size", "red", "blue", "black", "white", "novelty", "funny", "gift", "keychain"],
+    "variants": [
+      {
+        "id": "hoodiered0",
+        "price": 10,
+        "compare_at": null,
+        "main_image": "",
+        "gallery_images": []
+      },
+      {
+        "id": "hoodieblack0",
+        "price": 10,
+        "compare_at": null,
+        "main_image": "",
+        "gallery_images": []
+      },
+      {
+        "id": "hoodiewhite0",
+        "price": 10,
+        "compare_at": null,
+        "main_image": "",
+        "gallery_images": []
+      }	 	  
+    ]
+  },
+  {
+    "name": "Custom Colors",
+    "id": "customcolors0",
+    "price": null,
+    "compare_at": null,
+    "created_at_yyyy_mm_dd": "2026-04-11",
+    "popular": false,
+    "description": "Want an item in a different color combo? Reach out via Instagram DM @sidequest_supply or email sidequestsupply@yahoo.com with your request. :-)",
+    "category": "custom orders",
+    "weight_oz": null,
+    "main_image": "",
+    "gallery_images": [],
+    "tags": ["custom", "custom colors", "custom order", "color request", "personalized", "special request"],
+    "variants": []
+  }
+]
+
