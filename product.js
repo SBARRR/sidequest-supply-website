@@ -761,7 +761,7 @@ async function initializeProductPage() {
     setupProductActionButtons();
 
     try {
-        const response = await fetch(PRODUCTS_JSON_PATH, { cache: 'no-store' });
+        const response = await fetch(PRODUCTS_JSON_PATH);
         if (!response.ok) {
             throw new Error(`Failed to load products.json (${response.status})`);
         }

@@ -33,7 +33,7 @@ function canLoadImage(path) {
 
 async function loadGifManifest() {
     try {
-        const response = await fetch(GIF_MANIFEST_PATH, { cache: 'no-store' });
+        const response = await fetch(GIF_MANIFEST_PATH);
         if (!response.ok) {
             return [];
         }

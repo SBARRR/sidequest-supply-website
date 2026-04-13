@@ -169,7 +169,7 @@
 
     async function loadProductsForMenu() {
         try {
-            const response = await fetch(PRODUCTS_JSON_PATH, { cache: 'no-store' });
+            const response = await fetch(PRODUCTS_JSON_PATH);
             if (!response.ok) {
                 setLinkVisibility(trendingLink, false);
                 return;

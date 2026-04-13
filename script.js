@@ -209,6 +209,8 @@ function createProductImage(productName, imagePath) {
     image.className = 'catalogue-image catalogue-image-media';
     image.src = imagePath;
     image.alt = productName || 'Featured product';
+    image.loading = 'lazy';
+    image.decoding = 'async';
 
     image.addEventListener('error', () => {
         image.replaceWith(createPlaceholderImage());
@@ -321,7 +323,7 @@ function normalizeFeaturedEntries(entries, productsById) {
 }
 
 async function loadJson(path) {
-    const response = await fetch(path, { cache: 'no-store' });
+    const response = await fetch(path);
     if (!response.ok) {
         throw new Error(`Failed to load ${path} (${response.status})`);
     }
@@ -345,7 +347,6 @@ function renderFeaturedCarousel(featuredItems) {
         const card = document.createElement('article');
         card.className = 'catalogue-card featured-catalogue-card';
 
-        const placeholder = createPlaceholderImage();
         const body = document.createElement('div');
         body.className = 'catalogue-card-body featured-catalogue-card-body';
         const info = document.createElement('p');
@@ -353,7 +354,6 @@ function renderFeaturedCarousel(featuredItems) {
         info.textContent = 'No featured products yet';
 
         body.appendChild(info);
-        card.appendChild(placeholder);
         card.appendChild(body);
         item.appendChild(card);
         carouselContainer.appendChild(item);

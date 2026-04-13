@@ -81,7 +81,7 @@
 
     async function loadProductWeights() {
         try {
-            const response = await fetch(PRODUCTS_JSON_PATH, { cache: 'no-store' });
+            const response = await fetch(PRODUCTS_JSON_PATH);
             if (!response.ok) {
                 return;
             }

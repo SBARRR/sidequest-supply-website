@@ -224,8 +224,8 @@ main {
 .carousel-item {
     min-width: 100%;
     display: flex;
-    justify-content: center;
-    align-items: center;
+    justify-content: flex-start;
+    align-items: stretch;
     box-sizing: border-box;
     overflow: hidden;
 }
@@ -310,6 +310,11 @@ main {
 .featured-catalogue-card .catalogue-card-body {
     padding-right: 0.65rem;
     padding-bottom: 2.35rem;
+}
+
+.featured-catalogue-card {
+    width: 100%;
+    max-width: 100%;
 }
 
 .featured-catalogue-card .catalogue-product-price {
