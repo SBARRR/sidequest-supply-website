@@ -3,3 +3,28 @@ dist/
 .npm-cache/
 npm-debug.log*
 .codex
+
+# Local Netlify folder
+.netlify
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Build/cache/temp/log artifacts
+*.log
+*.tmp
+*.swp
+coverage/
+.cache/
+.vite/
+
+# Deno lockfile (not needed for this project deploy flow)
+deno.lock

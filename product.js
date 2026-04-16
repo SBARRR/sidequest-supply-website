@@ -11,12 +11,15 @@ const productThumbGallery = document.querySelector('#product-thumb-gallery');
 const variantPicker = document.querySelector('#variant-picker');
 const colorsSection = document.querySelector('#product-colors-section');
 const variantSection = colorsSection || (variantPicker ? variantPicker.closest('.product-block') : null);
+const variantSectionTitle = variantSection ? variantSection.querySelector('.product-block-title') : null;
 const relatedProductsGrid = document.querySelector('#related-products-grid');
+const quantitySection = document.querySelector('#product-quantity-section');
 const qtyMinusButton = document.querySelector('#qty-minus');
 const qtyPlusButton = document.querySelector('#qty-plus');
 const qtyValue = document.querySelector('#qty-value');
 const addToCartButton = document.querySelector('#add-to-cart-button');
 const checkoutButton = document.querySelector('#checkout-button');
+const customContactSection = document.querySelector('#custom-contact-section');
 
 const COLOR_SWATCH_MAP = [
     { token: 'lightblue', color: '#68C8FF' },
@@ -46,6 +49,7 @@ let activeProductId = '';
 let activeProduct = null;
 let activeVariantForCart = null;
 let activeProductHasVariants = false;
+let selectedBaseProductIdForPromo = '';
 
 function getProductIdFromUrl() {
     const params = new URLSearchParams(window.location.search);
@@ -73,6 +77,78 @@ function normalizeCategoryKey(categoryValue) {
     }
 
     return categoryValue.trim().toLowerCase();
+}
+
+function isCustomOrderProduct(product) {
+    return normalizeCategoryKey(product?.category) === 'custom orders';
+}
+
+function isSpend12PromoProduct(product) {
+    return normalizeCategoryKey(product?.category).includes('promo')
+        && product?.promoRule === 'spend_12';
+}
+
+function getSpend12ModelCategory(product) {
+    const categoryKey = normalizeCategoryKey(product?.category);
+    if (categoryKey.includes('sleeve')) {
+        return 'lighter sleeve';
+    }
+
+    return 'keychain';
+}
+
+function getSpend12ModelPrompt(product) {
+    return getSpend12ModelCategory(product) === 'lighter sleeve'
+        ? 'Select your sleeve'
+        : 'Select your keychain';
+}
+
+function buildSpend12SelectionId(productId, variantId = '') {
+    return variantId ? `${productId}::${variantId}` : productId;
+}
+
+function getSpend12ModelOptions(product, allProducts) {
+    const modelCategory = getSpend12ModelCategory(product);
+    if (!Array.isArray(allProducts)) {
+        return [];
+    }
+
+    const options = [];
+
+    allProducts.forEach((candidate) => {
+        if (candidate?.available === false || normalizeCategoryKey(candidate?.category) !== modelCategory) {
+            return;
+        }
+
+        const baseColorLabel = detectColorLabelFromId(candidate.id);
+        const baseLabel = baseColorLabel
+            ? `${candidate.name} - ${baseColorLabel}`
+            : candidate.name;
+
+        options.push({
+            selectionId: buildSpend12SelectionId(candidate.id),
+            label: baseLabel
+        });
+
+        const variants = Array.isArray(candidate.variants) ? candidate.variants : [];
+        variants.forEach((variant, index) => {
+            const safeVariant = typeof variant === 'object' && variant !== null ? variant : {};
+            const variantId = typeof safeVariant.id === 'string' && safeVariant.id.trim() !== ''
+                ? safeVariant.id.trim()
+                : `${candidate.id}-variant-${index + 1}`;
+            const colorLabel = detectColorLabelFromId(variantId);
+            const variantLabel = colorLabel
+                ? `${candidate.name} - ${colorLabel}`
+                : `${candidate.name} ${index + 2}`;
+
+            options.push({
+                selectionId: buildSpend12SelectionId(candidate.id, variantId),
+                label: variantLabel
+            });
+        });
+    });
+
+    return options.sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
 }
 
 function normalizeTagList(tagsValue) {
@@ -197,10 +273,14 @@ function dedupeImageList(imageList) {
     return [...new Set(imageList)];
 }
 
-function detectColorFromId(idValue) {
+function detectColorEntryFromId(idValue) {
     const normalizedId = String(idValue || '').toLowerCase();
-    const match = COLOR_SWATCH_MAP.find((entry) => normalizedId.includes(entry.token));
-    return match ? match.color : '#4B4B4B';
+    return COLOR_SWATCH_MAP.find((entry) => normalizedId.includes(entry.token)) || null;
+}
+
+function detectColorFromId(idValue) {
+    const match = detectColorEntryFromId(idValue);
+    return match ? match.color : '';
 }
 
 function detectColorLabelFromId(idValue) {
@@ -275,6 +355,9 @@ function normalizeProducts(rawProducts) {
         const category = typeof safeProduct.category === 'string'
             ? safeProduct.category.trim()
             : '';
+        const promoRule = typeof safeProduct.promo_rule === 'string'
+            ? safeProduct.promo_rule.trim()
+            : '';
         const tags = normalizeTagList(safeProduct.tags);
         const categoryKey = normalizeCategoryKey(category);
         const createdAtTimestamp = parseProductCreatedAt(safeProduct.created_at_yyyy_mm_dd);
@@ -289,6 +372,7 @@ function normalizeProducts(rawProducts) {
             description,
             category,
             categoryKey,
+            promoRule,
             tags,
             createdAtTimestamp,
             isManuallyPopular,
@@ -303,8 +387,9 @@ function normalizeProducts(rawProducts) {
 function buildVariantOptions(product) {
     const baseVariant = {
         id: product.id,
-        label: 'Base',
+        label: `${product.name} 1`,
         color: detectColorFromId(product.id),
+        colorLabel: detectColorLabelFromId(product.id),
         priceValue: product.priceValue,
         compareAtValue: product.compareAtValue,
         mediaList: buildMediaList(product.mainImage, product.galleryImages)
@@ -327,8 +412,9 @@ function buildVariantOptions(product) {
 
         return {
             id: variantId,
-            label: variantId,
+            label: `${product.name} ${index + 2}`,
             color: detectColorFromId(variantId),
+            colorLabel: detectColorLabelFromId(variantId),
             priceValue: resolvedPriceValue,
             compareAtValue: resolvedCompareAtValue,
             mediaList: variantMediaList.length > 0 ? variantMediaList : fallbackMediaList
@@ -336,6 +422,10 @@ function buildVariantOptions(product) {
     });
 
     return [baseVariant, ...additionalVariants];
+}
+
+function shouldRenderColorVariantPicker(variantOptions) {
+    return variantOptions.length > 0 && variantOptions.every((variant) => variant.color !== '');
 }
 
 function renderMainMedia(imagePath, productName) {
@@ -389,12 +479,13 @@ function renderMediaGallery(mediaList, productName) {
     });
 }
 
-function renderVariantPicker(variantOptions, productName, onVariantChange) {
+function renderVariantPicker(variantOptions, productName, pickerType, onVariantChange) {
     if (!variantPicker) {
         return;
     }
 
     variantPicker.innerHTML = '';
+    variantPicker.classList.toggle('variant-picker-styles', pickerType === 'style');
 
     function setSelectedVariant(selectedVariantId) {
         const selectedVariant = variantOptions.find((variant) => variant.id === selectedVariantId) || variantOptions[0];
@@ -404,31 +495,37 @@ function renderVariantPicker(variantOptions, productName, onVariantChange) {
             onVariantChange(selectedVariant);
         }
 
-        variantPicker.querySelectorAll('.variant-swatch').forEach((swatch) => {
-            const isSelected = swatch.dataset.variantId === selectedVariant.id;
-            swatch.classList.toggle('selected', isSelected);
-            swatch.setAttribute('aria-pressed', String(isSelected));
+        variantPicker.querySelectorAll('.variant-choice').forEach((choice) => {
+            const isSelected = choice.dataset.variantId === selectedVariant.id;
+            choice.classList.toggle('selected', isSelected);
+            choice.setAttribute('aria-pressed', String(isSelected));
         });
     }
 
     variantOptions.forEach((variant) => {
-        const swatchButton = document.createElement('button');
-        swatchButton.type = 'button';
-        swatchButton.className = 'variant-swatch';
-        swatchButton.dataset.variantId = variant.id;
-        swatchButton.setAttribute('aria-pressed', 'false');
-        swatchButton.setAttribute('title', variant.label);
+        const variantButton = document.createElement('button');
+        variantButton.type = 'button';
+        variantButton.className = pickerType === 'color'
+            ? 'variant-choice variant-swatch'
+            : 'variant-choice variant-style-pill';
+        variantButton.dataset.variantId = variant.id;
+        variantButton.setAttribute('aria-pressed', 'false');
+        variantButton.setAttribute('title', pickerType === 'color' ? variant.colorLabel : variant.label);
 
-        const swatchColor = document.createElement('span');
-        swatchColor.className = 'variant-swatch-color';
-        swatchColor.style.backgroundColor = variant.color;
-        swatchButton.appendChild(swatchColor);
+        if (pickerType === 'color') {
+            const swatchColor = document.createElement('span');
+            swatchColor.className = 'variant-swatch-color';
+            swatchColor.style.backgroundColor = variant.color;
+            variantButton.appendChild(swatchColor);
+        } else {
+            variantButton.textContent = variant.label;
+        }
 
-        swatchButton.addEventListener('click', () => {
+        variantButton.addEventListener('click', () => {
             setSelectedVariant(variant.id);
         });
 
-        variantPicker.appendChild(swatchButton);
+        variantPicker.appendChild(variantButton);
     });
 
     setSelectedVariant(variantOptions[0].id);
@@ -459,31 +556,109 @@ function setupQuantitySelector() {
     }
 }
 
+function renderSpend12ModelSelector(product, allProducts) {
+    if (!quantitySection) {
+        return;
+    }
+
+    const options = getSpend12ModelOptions(product, allProducts);
+    const promptText = getSpend12ModelPrompt(product);
+    selectedBaseProductIdForPromo = '';
+
+    quantitySection.hidden = false;
+    quantitySection.innerHTML = '';
+
+    const title = document.createElement('h3');
+    title.className = 'product-block-title';
+    title.textContent = 'Model';
+
+    const selectWrap = document.createElement('div');
+    selectWrap.className = 'promo-model-select-wrap';
+
+    const modelSelect = document.createElement('select');
+    modelSelect.className = 'promo-model-select';
+    modelSelect.setAttribute('aria-label', promptText);
+
+    const promptOption = document.createElement('option');
+    promptOption.value = '';
+    promptOption.textContent = promptText;
+    promptOption.selected = true;
+    modelSelect.appendChild(promptOption);
+
+    options.forEach((optionProduct) => {
+        const option = document.createElement('option');
+        option.value = optionProduct.selectionId;
+        option.textContent = optionProduct.label;
+        modelSelect.appendChild(option);
+    });
+
+    modelSelect.addEventListener('change', () => {
+        selectedBaseProductIdForPromo = modelSelect.value.trim();
+        if (addToCartButton) {
+            addToCartButton.disabled = selectedBaseProductIdForPromo === '';
+        }
+    });
+
+    const hasModelOptions = options.length > 0;
+    if (!hasModelOptions) {
+        modelSelect.disabled = true;
+        promptOption.textContent = 'No models available';
+    }
+
+    if (addToCartButton) {
+        addToCartButton.disabled = !hasModelOptions;
+    }
+
+    selectWrap.appendChild(modelSelect);
+    quantitySection.appendChild(title);
+    quantitySection.appendChild(selectWrap);
+}
+
 function setupProductActionButtons() {
     if (addToCartButton) {
-        addToCartButton.addEventListener('click', () => {
+        addToCartButton.addEventListener('click', async () => {
             let didAddToCart = false;
 
             if (activeProduct && activeVariantForCart && cart && typeof cart.addItem === 'function' && currentQuantity > 0) {
+                const isSpend12Promo = isSpend12PromoProduct(activeProduct);
+                if (isSpend12Promo && !selectedBaseProductIdForPromo) {
+                    if (cartFeedback && typeof cartFeedback.showToast === 'function') {
+                        cartFeedback.showToast(getSpend12ModelPrompt(activeProduct));
+                    }
+                    return;
+                }
+
                 const variantId = activeVariantForCart.id !== activeProduct.id
                     ? activeVariantForCart.id
                     : '';
+                const pickerType = shouldRenderColorVariantPicker(buildVariantOptions(activeProduct))
+                    ? 'color'
+                    : 'style';
                 const colorLabel = activeProductHasVariants
+                    && pickerType === 'color'
                     ? detectColorLabelFromId(activeVariantForCart.id)
+                    : '';
+                const styleLabel = activeProductHasVariants
+                    && pickerType === 'style'
+                    ? activeVariantForCart.label
                     : '';
                 const primaryImage = Array.isArray(activeVariantForCart.mediaList) && activeVariantForCart.mediaList.length > 0
                     ? activeVariantForCart.mediaList[0]
                     : activeProduct.mainImage;
 
-                cart.addItem({
+                const addResult = await cart.addItem({
                     productId: activeProduct.id,
                     variantId,
                     name: activeProduct.name,
                     color: colorLabel,
+                    style: styleLabel,
+                    selectedBaseProductId: isSpend12Promo ? selectedBaseProductIdForPromo : '',
+                    category: activeProduct.category,
+                    promoRule: activeProduct.promoRule,
                     price: activeVariantForCart.priceValue,
                     image: primaryImage || ''
                 }, currentQuantity);
-                didAddToCart = true;
+                didAddToCart = addResult?.added === true;
             }
 
             if (didAddToCart && activeProductId && analytics && typeof analytics.trackAddToCart === 'function') {
@@ -704,6 +879,9 @@ function renderProduct(product, allProducts) {
 
     const variantOptions = buildVariantOptions(product);
     const hasAdditionalVariants = Array.isArray(product.variants) && product.variants.length > 0;
+    const isCustomOrder = isCustomOrderProduct(product);
+    const isSpend12Promo = isSpend12PromoProduct(product);
+    selectedBaseProductIdForPromo = '';
     activeProductId = product.id;
     activeProduct = product;
     activeProductHasVariants = hasAdditionalVariants;
@@ -727,13 +905,42 @@ function renderProduct(product, allProducts) {
         variantSection.hidden = !hasAdditionalVariants;
     }
 
+    if (quantitySection) {
+        quantitySection.hidden = isCustomOrder;
+    }
+
+    if (isSpend12Promo) {
+        currentQuantity = 1;
+        updateQuantityDisplay();
+        renderSpend12ModelSelector(product, allProducts);
+    }
+
+    if (addToCartButton) {
+        addToCartButton.hidden = isCustomOrder;
+        if (!isSpend12Promo) {
+            addToCartButton.disabled = false;
+        }
+    }
+
+    if (customContactSection) {
+        customContactSection.hidden = !isCustomOrder;
+    }
+
     if (hasAdditionalVariants) {
-        renderVariantPicker(variantOptions, product.name, (selectedVariant) => {
+        const pickerType = shouldRenderColorVariantPicker(variantOptions) ? 'color' : 'style';
+        if (variantSectionTitle) {
+            variantSectionTitle.textContent = pickerType === 'color' ? 'Colors' : 'Styles';
+        }
+        renderVariantPicker(variantOptions, product.name, pickerType, (selectedVariant) => {
             activeVariantForCart = selectedVariant;
         });
     } else {
+        if (variantSectionTitle) {
+            variantSectionTitle.textContent = 'Colors';
+        }
         if (variantPicker) {
             variantPicker.innerHTML = '';
+            variantPicker.classList.remove('variant-picker-styles');
         }
         renderMediaGallery(variantOptions[0].mediaList, product.name);
     }

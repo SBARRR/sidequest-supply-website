@@ -28,8 +28,78 @@
             </button>
         </div>
         <h1>Sidequest Supply</h1>
-        <p>Odds & ends designed for the detour</p>
+        <nav class="breadcrumbs" aria-label="Breadcrumb">
+            <a class="breadcrumb-link is-active" href="index.html" aria-current="page">Home</a>
+            <span class="breadcrumb-separator breadcrumb-separator-dot" aria-hidden="true">&bull;</span>
+            <a class="breadcrumb-link" href="catalogue.html">Shop</a>
+        </nav>
     </header>
+    <div class="promo-ticker" aria-label="Promotional updates">
+        <div class="promo-ticker-track" data-promo-ticker-on hidden>
+            <span class="promo-ticker-group">
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Promos available</a>
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Bundle deals available</a>
+            </span>
+            <span class="promo-ticker-group">
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Promos available</a>
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Bundle deals available</a>
+            </span>
+            <span class="promo-ticker-group">
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Promos available</a>
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Bundle deals available</a>
+            </span>
+            <span class="promo-ticker-group">
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Promos available</a>
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Bundle deals available</a>
+            </span>
+            <span class="promo-ticker-group">
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Promos available</a>
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Bundle deals available</a>
+            </span>
+            <span class="promo-ticker-group">
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Promos available</a>
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Bundle deals available</a>
+            </span>
+        </div>
+        <div class="promo-ticker-track" data-promo-ticker-off>
+            <span class="promo-ticker-group">
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Bundle deals available</a>
+            </span>
+            <span class="promo-ticker-group">
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Bundle deals available</a>
+            </span>
+            <span class="promo-ticker-group">
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Bundle deals available</a>
+            </span>
+            <span class="promo-ticker-group">
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Bundle deals available</a>
+            </span>
+            <span class="promo-ticker-group">
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Bundle deals available</a>
+            </span>
+            <span class="promo-ticker-group">
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Bundle deals available</a>
+            </span>
+        </div>
+    </div>
     <main>
         <section id="hero">
             <h2>Featured Finds</h2>
@@ -38,6 +108,47 @@
                 <div class="carousel-dots" id="featured-carousel-dots"></div>
             </div>
             <a href="catalogue.html">Shop All</a>
+        </section>
+        <section id="deals-offers" class="deals-section" aria-labelledby="deals-title">
+            <h2 id="deals-title">Deals and Offers</h2>
+            <div class="deals-grid">
+                <section class="deals-column" data-promo-section data-promo-rule="spend_12" hidden aria-labelledby="promos-title">
+                    <h3 id="promos-title">Spend 12 Promo</h3>
+                    <ul class="deals-list">
+                        <li>Any $12+ order, including shipping and tax, unlocks 1 promo item.</li>
+                        <li>Get 1 basic keychain for $1 or 1 lighter sleeve for $2. Limit 1 per order.</li>
+                    </ul>
+                </section>
+                <section class="deals-column" aria-labelledby="every-day-bundles-title">
+                    <h3 id="every-day-bundles-title">Every day bundles</h3>
+                    <p class="deals-intro">Always available. Mix, match, and save on multi-item orders.</p>
+                    <div class="bundle-rate-group">
+                        <h4>Standard Keychains</h4>
+                        <ul class="deals-list">
+                            <li>2 for $6</li>
+                            <li>3 for $8</li>
+                            <li>4 for $10</li>
+                        </ul>
+                    </div>
+                    <div class="bundle-rate-group">
+                        <h4>Lighter Sleeves</h4>
+                        <ul class="deals-list">
+                            <li>2 for $9</li>
+                            <li>3 for $12</li>
+                            <li>4 for $15</li>
+                        </ul>
+                    </div>
+                    <div class="bundle-rate-group">
+                        <h4>Mix &amp; Match</h4>
+                        <ul class="deals-list">
+                            <li>1 keychain + 1 sleeve for $7.50</li>
+                            <li>2 keychains + 1 sleeve for $9.33</li>
+                            <li>1 keychain + 2 sleeves for $10.66</li>
+                            <li>2 keychains + 2 sleeves for $12.50</li>
+                        </ul>
+                    </div>
+                </section>
+            </div>
         </section>
     </main>
     <footer>

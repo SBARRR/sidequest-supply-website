@@ -5,4 +5,7 @@ import './cart.js';
 import './cart-feedback.js';
 import './cart-drawer.js';
 import './menu-drawer.js';
+import './promo-visibility.js';
 import './script.js';
+import './anchor-scroll.js';
+import './back-to-top.js';

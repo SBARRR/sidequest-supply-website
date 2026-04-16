@@ -49,9 +49,9 @@
         return toast;
     }
 
-    function showAddedToast() {
+    function showToast(message = 'Added to cart') {
         const toast = ensureToastElement();
-        toast.textContent = 'Added to cart';
+        toast.textContent = message;
         toast.classList.add('show');
 
         if (toastHideTimer) {
@@ -61,7 +61,11 @@
         toastHideTimer = setTimeout(() => {
             toast.classList.remove('show');
             toastHideTimer = null;
-        }, 1100);
+        }, 2200);
+    }
+
+    function showAddedToast() {
+        showToast('Added to cart');
     }
 
     function flashIconButton(button) {
@@ -123,9 +127,17 @@
         updateHeaderCountBadges();
     });
 
+    globalScope.addEventListener('sidequest:cart-add-rejected', (event) => {
+        const message = typeof event?.detail?.message === 'string' && event.detail.message.trim() !== ''
+            ? event.detail.message.trim()
+            : 'This item is not available for your cart yet.';
+        showToast(message);
+    });
+
     globalScope.SidequestCartFeedback = {
         announceAdded,
         showAddedToast,
+        showToast,
         refreshHeaderCount: updateHeaderCountBadges
     };
 })(window);

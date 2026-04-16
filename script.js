@@ -81,21 +81,25 @@ function createFeaturedCardActions(product) {
     cartIcon.src = 'icons/cart/cart.svg';
     cartIcon.alt = '';
     cartButton.appendChild(cartIcon);
-    cartButton.addEventListener('click', (event) => {
+    cartButton.addEventListener('click', async (event) => {
         event.preventDefault();
         event.stopPropagation();
-        if (analytics && typeof analytics.trackAddToCart === 'function') {
-            analytics.trackAddToCart(product.id);
-        }
+        let didAddToCart = false;
         if (cart && typeof cart.addItem === 'function') {
-            cart.addItem({
+            const addResult = await cart.addItem({
                 productId: product.id,
                 name: product.name,
+                category: product.category,
+                promoRule: product.promoRule,
                 price: product.priceValue,
                 image: product.imagePath
             }, 1);
+            didAddToCart = addResult?.added === true;
         }
-        if (cartFeedback && typeof cartFeedback.announceAdded === 'function') {
+        if (didAddToCart && analytics && typeof analytics.trackAddToCart === 'function') {
+            analytics.trackAddToCart(product.id);
+        }
+        if (didAddToCart && cartFeedback && typeof cartFeedback.announceAdded === 'function') {
             cartFeedback.announceAdded(cartButton);
         }
     });
@@ -308,10 +312,14 @@ function normalizeFeaturedEntries(entries, productsById) {
             const imageFromProduct = typeof product.main_image === 'string' ? product.main_image.trim() : '';
             const imageOverride = typeof entry.main_image === 'string' ? entry.main_image.trim() : '';
             const imagePath = imageOverride || imageFromProduct;
+            const category = typeof product.category === 'string' ? product.category.trim() : '';
+            const promoRule = typeof product.promo_rule === 'string' ? product.promo_rule.trim() : '';
 
             return {
                 id: product.id || entry.product_id,
                 name,
+                category,
+                promoRule,
                 priceValue,
                 priceText,
                 compareAtText,

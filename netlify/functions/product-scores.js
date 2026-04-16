@@ -8,6 +8,27 @@ const ALLOWED_ACTIONS = {
     checkout: 5
 };
 
+function getStoreOptions() {
+    const siteID = process.env.NETLIFY_BLOBS_SITE_ID || process.env.NETLIFY_SITE_ID || '';
+    const token = process.env.NETLIFY_BLOBS_TOKEN
+        || process.env.NETLIFY_AUTH_TOKEN
+        || process.env.NETLIFY_ACCESS_TOKEN
+        || '';
+
+    if (siteID && token) {
+        return { siteID, token };
+    }
+
+    return undefined;
+}
+
+function getProductScoreStore() {
+    const storeOptions = getStoreOptions();
+    return storeOptions
+        ? getStore({ name: STORE_NAME, ...storeOptions })
+        : getStore(STORE_NAME);
+}
+
 function isPlainObject(value) {
     return value && typeof value === 'object' && !Array.isArray(value);
 }
@@ -71,13 +92,13 @@ function getTopProductIdsByScore(scoreMap, limit = 3) {
 }
 
 async function readScoreMap() {
-    const store = getStore(STORE_NAME);
+    const store = getProductScoreStore();
     const rawScores = await store.get(STORE_KEY, { type: 'json' });
     return normalizeScores(rawScores);
 }
 
 async function writeScoreMap(scoreMap) {
-    const store = getStore(STORE_NAME);
+    const store = getProductScoreStore();
     await store.setJSON(STORE_KEY, normalizeScores(scoreMap));
 }
 

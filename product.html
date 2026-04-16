@@ -29,13 +29,79 @@
         </div>
         <h1>Sidequest Supply</h1>
         <nav class="breadcrumbs" aria-label="Breadcrumb">
-            <a href="index.html">Home</a>
-            <span aria-hidden="true">&rsaquo;</span>
-            <a href="catalogue.html">Shop</a>
-            <span aria-hidden="true">&rsaquo;</span>
-            <span id="product-breadcrumb-label" aria-current="page">Product</span>
+            <a class="breadcrumb-link" href="index.html">Home</a>
+            <span class="breadcrumb-separator breadcrumb-separator-dot" aria-hidden="true">&bull;</span>
+            <a class="breadcrumb-link" href="catalogue.html">Shop</a>
+            <span class="breadcrumb-separator" aria-hidden="true">&rsaquo;</span>
+            <span id="product-breadcrumb-label" class="breadcrumb-link is-active breadcrumb-current" aria-current="page">Product</span>
         </nav>
     </header>
+    <div class="promo-ticker" aria-label="Promotional updates">
+        <div class="promo-ticker-track" data-promo-ticker-on hidden>
+            <span class="promo-ticker-group">
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Promos available</a>
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Bundle deals available</a>
+            </span>
+            <span class="promo-ticker-group">
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Promos available</a>
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Bundle deals available</a>
+            </span>
+            <span class="promo-ticker-group">
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Promos available</a>
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Bundle deals available</a>
+            </span>
+            <span class="promo-ticker-group">
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Promos available</a>
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Bundle deals available</a>
+            </span>
+            <span class="promo-ticker-group">
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Promos available</a>
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Bundle deals available</a>
+            </span>
+            <span class="promo-ticker-group">
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Promos available</a>
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Bundle deals available</a>
+            </span>
+        </div>
+        <div class="promo-ticker-track" data-promo-ticker-off>
+            <span class="promo-ticker-group">
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Bundle deals available</a>
+            </span>
+            <span class="promo-ticker-group">
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Bundle deals available</a>
+            </span>
+            <span class="promo-ticker-group">
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Bundle deals available</a>
+            </span>
+            <span class="promo-ticker-group">
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Bundle deals available</a>
+            </span>
+            <span class="promo-ticker-group">
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Bundle deals available</a>
+            </span>
+            <span class="promo-ticker-group">
+                <span class="promo-ticker-dot" aria-hidden="true">&bull;</span>
+                <a class="promo-ticker-link" href="index.html#deals-offers">Bundle deals available</a>
+            </span>
+        </div>
+    </div>
     <main>
         <section id="product-not-found" class="product-not-found" hidden>
             <h2>Product Not Found</h2>
@@ -63,7 +129,7 @@
                         <div id="variant-picker" class="variant-picker"></div>
                     </section>
 
-                    <section class="product-block">
+                    <section id="product-quantity-section" class="product-block">
                         <h3 class="product-block-title">Quantity</h3>
                         <div class="quantity-pill" aria-label="Quantity selector">
                             <button id="qty-minus" type="button" class="qty-button" aria-label="Decrease quantity">-</button>
@@ -76,6 +142,22 @@
                         <button id="add-to-cart-button" type="button" class="product-action-button">Add to Cart</button>
                         <button id="checkout-button" type="button" class="product-action-button">View Cart</button>
                     </div>
+
+                    <section id="custom-contact-section" class="custom-contact-section" hidden>
+                        <h3 class="product-block-title">Contact</h3>
+                        <div class="custom-contact-actions">
+                            <a
+                                class="product-action-button custom-contact-button"
+                                href="https://www.instagram.com/sidequest_supply/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >Instagram</a>
+                            <a
+                                class="product-action-button custom-contact-button"
+                                href="mailto:sidequestsupply@yahoo.com"
+                            >Email</a>
+                        </div>
+                    </section>
 
                     <section class="shipping-info">
                         <p>Orders ship within 1–3 business days. Once your order is on the way, tracking information will be sent to you via your preferred contact method.</p>

@@ -137,6 +137,7 @@ if (catalogueGrid && loadMoreProductsButton) {
     const PRODUCTS_PER_LOAD = 4;
     const FAVORITES_STORAGE_KEY = 'sidequest-favorites';
     const PRODUCTS_JSON_PATH = 'product%20json/products.json';
+    const CATALOGUE_SETTINGS_PATH = 'product%20json/catalogue-settings.json';
     const NEW_BADGE_MAX_AGE_DAYS = 30;
     const BADGE_ICON_PATHS = {
         new: 'icons/badges/new.png',
@@ -157,6 +158,8 @@ if (catalogueGrid && loadMoreProductsButton) {
     let appliedSearchQuery = '';
     let popularProductIds = new Set();
     let productLookupById = new Map();
+    let promosEnabled = false;
+    let enabledPromoRuleIds = null;
     const favoriteProductIds = new Set(loadFavoriteProductIds());
 
     function parsePriceNumber(priceValue) {
@@ -297,6 +300,43 @@ if (catalogueGrid && loadMoreProductsButton) {
             .join(' ');
     }
 
+    function isPromoProduct(product) {
+        return normalizeCategoryValue(product?.category).includes('promo');
+    }
+
+    function normalizePromoRuleIds(value) {
+        if (!Array.isArray(value)) {
+            return null;
+        }
+
+        return new Set(
+            value
+                .filter((ruleId) => typeof ruleId === 'string' && ruleId.trim() !== '')
+                .map((ruleId) => ruleId.trim())
+        );
+    }
+
+    function isPromoRuleVisible(ruleId) {
+        if (!promosEnabled) {
+            return false;
+        }
+
+        if (enabledPromoRuleIds === null) {
+            return true;
+        }
+
+        return enabledPromoRuleIds.has(ruleId);
+    }
+
+    function isPromoProductVisible(product) {
+        if (!isPromoProduct(product)) {
+            return true;
+        }
+
+        const promoRule = typeof product?.promoRule === 'string' ? product.promoRule.trim() : '';
+        return promoRule !== '' && isPromoRuleVisible(promoRule);
+    }
+
     function getBrowseCategoryFromUrl() {
         const params = new URLSearchParams(window.location.search);
         const browseParam = params.get('browse');
@@ -310,7 +350,8 @@ if (catalogueGrid && loadMoreProductsButton) {
             }
 
             const matchingChip = browseChips.find((chip) => (
-                normalizeCategoryValue(chip.dataset.category || chip.textContent || '') === normalized
+                !chip.hidden
+                && normalizeCategoryValue(chip.dataset.category || chip.textContent || '') === normalized
             ));
 
             if (matchingChip) {
@@ -395,18 +436,32 @@ if (catalogueGrid && loadMoreProductsButton) {
         return normalized === 'all' ? 'all' : normalized;
     }
 
+    function matchesBrowseCategory(product, selectedCategory) {
+        if (selectedCategory === 'all') {
+            return true;
+        }
+
+        const productCategory = normalizeCategoryValue(product.category);
+        if (selectedCategory === 'promo') {
+            return productCategory.includes('promo') && isPromoProductVisible(product);
+        }
+
+        return productCategory === selectedCategory;
+    }
+
     function getFilteredCatalogueProducts() {
         const selectedCategory = getSelectedBrowseCategoryKey();
-        const categoryFiltered = selectedCategory === 'all'
-            ? [...catalogueProducts]
-            : catalogueProducts.filter((product) => (
-            normalizeCategoryValue(product.category) === selectedCategory
+        const promoVisibilityMatched = catalogueProducts.filter((product) => (
+            !isPromoProduct(product) || isPromoProductVisible(product)
+        ));
+        const categoryFiltered = promoVisibilityMatched.filter((product) => (
+            matchesBrowseCategory(product, selectedCategory)
         ));
 
         const filterMatched = categoryFiltered.filter((product) => matchesAppliedFilter(product));
         const priceMatched = filterMatched.filter((product) => matchesAppliedPrice(product));
         const searchMatched = priceMatched.filter((product) => matchesAppliedSearch(product));
-        return applySelectedSort(searchMatched);
+        return prioritizePromoProducts(applySelectedSort(searchMatched));
     }
 
     function getSelectedSortValue() {
@@ -505,6 +560,21 @@ if (catalogueGrid && loadMoreProductsButton) {
         });
 
         return sorted;
+    }
+
+    function prioritizePromoProducts(products) {
+        if (!promosEnabled) {
+            return products;
+        }
+
+        return [...products].sort((a, b) => {
+            const aIsPromo = isPromoProduct(a);
+            const bIsPromo = isPromoProduct(b);
+            if (aIsPromo === bIsPromo) {
+                return 0;
+            }
+            return aIsPromo ? -1 : 1;
+        });
     }
 
     function matchesAppliedFilter(product) {
@@ -687,6 +757,9 @@ if (catalogueGrid && loadMoreProductsButton) {
             const category = typeof safeProduct.category === 'string'
                 ? safeProduct.category.trim()
                 : '';
+            const promoRule = typeof safeProduct.promo_rule === 'string'
+                ? safeProduct.promo_rule.trim()
+                : '';
             const searchIndex = buildProductSearchIndex({
                 name,
                 description,
@@ -710,7 +783,8 @@ if (catalogueGrid && loadMoreProductsButton) {
                 description,
                 tags,
                 searchIndex,
-                category
+                category,
+                promoRule
             };
         });
     }
@@ -872,6 +946,36 @@ if (catalogueGrid && loadMoreProductsButton) {
         }
     }
 
+    async function loadCatalogueSettings() {
+        try {
+            const response = await fetch(CATALOGUE_SETTINGS_PATH);
+            if (!response.ok) {
+                throw new Error(`Failed to load catalogue-settings.json (${response.status})`);
+            }
+
+            const settings = await response.json();
+            return {
+                promosEnabled: settings?.promos_enabled === true,
+                enabledPromoRuleIds: normalizePromoRuleIds(settings?.enabled_promo_rules)
+            };
+        } catch (error) {
+            return {
+                promosEnabled: false,
+                enabledPromoRuleIds: new Set()
+            };
+        }
+    }
+
+    function syncPromoBrowseChipVisibility() {
+        const hasVisiblePromos = catalogueProducts.some((product) => isPromoProduct(product) && isPromoProductVisible(product));
+        browseChips.forEach((chip) => {
+            const chipCategory = normalizeCategoryValue(chip.dataset.category || chip.textContent || '');
+            if (chipCategory === 'promo') {
+                chip.hidden = !hasVisiblePromos;
+            }
+        });
+    }
+
     function buildProductCard(product) {
         const productId = product.id;
         const card = document.createElement('article');
@@ -895,27 +999,34 @@ if (catalogueGrid && loadMoreProductsButton) {
         favoriteButton.type = 'button';
         favoriteButton.className = 'favorite-button';
         favoriteButton.appendChild(createHeartIcon());
+        const isPromo = isPromoProduct(product);
 
-        const cartButton = createCartButton();
-        cartButton.addEventListener('click', (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            if (analytics && typeof analytics.trackAddToCart === 'function') {
-                analytics.trackAddToCart(productId);
-            }
-            if (cart && typeof cart.addItem === 'function') {
-                cart.addItem({
-                    productId,
-                    name: product.name,
-                    price: product.priceValue,
-                    image: product.mainImage
-                }, 1);
-            }
-            if (cartFeedback && typeof cartFeedback.announceAdded === 'function') {
-                cartFeedback.announceAdded(cartButton);
-            }
-            refreshVisibleCardBadges();
-        });
+        const cartButton = isPromo ? null : createCartButton();
+        if (cartButton) {
+            cartButton.addEventListener('click', async (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                let didAddToCart = false;
+                if (cart && typeof cart.addItem === 'function') {
+                    const addResult = await cart.addItem({
+                        productId,
+                        name: product.name,
+                        category: product.category,
+                        promoRule: product.promoRule,
+                        price: product.priceValue,
+                        image: product.mainImage
+                    }, 1);
+                    didAddToCart = addResult?.added === true;
+                }
+                if (didAddToCart && analytics && typeof analytics.trackAddToCart === 'function') {
+                    analytics.trackAddToCart(productId);
+                }
+                if (didAddToCart && cartFeedback && typeof cartFeedback.announceAdded === 'function') {
+                    cartFeedback.announceAdded(cartButton);
+                }
+                refreshVisibleCardBadges();
+            });
+        }
 
         const initiallyFavorited = favoriteProductIds.has(productId);
         setFavoriteVisualState(favoriteButton, initiallyFavorited);
@@ -948,7 +1059,9 @@ if (catalogueGrid && loadMoreProductsButton) {
         card.appendChild(body);
         const actionRow = document.createElement('div');
         actionRow.className = 'catalogue-card-actions';
-        actionRow.appendChild(cartButton);
+        if (cartButton) {
+            actionRow.appendChild(cartButton);
+        }
         actionRow.appendChild(favoriteButton);
         card.appendChild(actionRow);
 
@@ -1037,7 +1150,8 @@ if (catalogueGrid && loadMoreProductsButton) {
         const allChip = browseChips.find((chip) => normalizeCategoryValue(chip.textContent || '') === 'all') || browseChips[0];
         const urlBrowseCategory = getBrowseCategoryFromUrl();
         const initialChip = browseChips.find((chip) => (
-            normalizeCategoryValue(chip.dataset.category || chip.textContent || '') === urlBrowseCategory
+            !chip.hidden
+            && normalizeCategoryValue(chip.dataset.category || chip.textContent || '') === urlBrowseCategory
         )) || allChip;
 
         browseChips.forEach((chip) => {
@@ -1066,8 +1180,15 @@ if (catalogueGrid && loadMoreProductsButton) {
     }
 
     async function initializeCatalogueGrid() {
-        catalogueProducts = await loadProductsFromJson();
+        const [products, settings] = await Promise.all([
+            loadProductsFromJson(),
+            loadCatalogueSettings()
+        ]);
+        promosEnabled = settings.promosEnabled;
+        enabledPromoRuleIds = settings.enabledPromoRuleIds;
+        catalogueProducts = products;
         productLookupById = new Map(catalogueProducts.map((product) => [product.id, product]));
+        syncPromoBrowseChipVisibility();
         refreshPopularProductIds();
         appliedSortValue = getSelectedSortValue();
         appliedPriceRangeValue = getSelectedPriceRangeValue();

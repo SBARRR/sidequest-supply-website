@@ -1,0 +1,9 @@
+{
+  "spend_12": {
+    "enabled": true,
+    "label": "Promo",
+    "minimum_total": 12,
+    "minimum_total_includes": ["subtotal", "shipping", "tax"],
+    "limit_per_order": 1
+  }
+}
