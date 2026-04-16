@@ -5,11 +5,11 @@ const PROJECT_ROOT = path.resolve(__dirname, '..');
 const DIST_DIR = path.join(PROJECT_ROOT, 'dist');
 const STATIC_TARGETS = [
     'fonts',
-    'gifs',
+    'headers',
     'icons',
     'product json',
     'product photos',
-    'gifs-manifest.json'
+    'headers-manifest.json'
 ];
 
 function pathExists(targetPath) {

@@ -648,14 +648,42 @@
         return control;
     }
 
+    function getThumbnailImagePath(imagePath) {
+        if (typeof imagePath !== 'string') {
+            return '';
+        }
+
+        const trimmedPath = imagePath.trim();
+        if (!trimmedPath) {
+            return '';
+        }
+
+        const extensionMatch = trimmedPath.match(/(\.[^./?#]+)([?#].*)?$/);
+        if (!extensionMatch) {
+            return `${trimmedPath}-thumb`;
+        }
+
+        const extensionStart = extensionMatch.index;
+        const extension = extensionMatch[1];
+        const suffix = extensionMatch[2] || '';
+        return `${trimmedPath.slice(0, extensionStart)}-thumb${extension}${suffix}`;
+    }
+
     function createItemMedia(item) {
         if (item.image) {
             const image = document.createElement('img');
             image.className = 'cart-item-thumb';
-            image.src = item.image;
+            const fallbackImagePath = item.image;
+            image.src = getThumbnailImagePath(item.image) || item.image;
             image.alt = item.name || 'Cart item';
             image.loading = 'lazy';
+            let fallbackAttempted = false;
             image.addEventListener('error', () => {
+                if (!fallbackAttempted && fallbackImagePath) {
+                    fallbackAttempted = true;
+                    image.src = fallbackImagePath;
+                    return;
+                }
                 image.replaceWith(createItemMedia({ ...item, image: '' }));
             });
             return image;

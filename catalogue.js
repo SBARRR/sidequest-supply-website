@@ -140,9 +140,9 @@ if (catalogueGrid && loadMoreProductsButton) {
     const CATALOGUE_SETTINGS_PATH = 'product%20json/catalogue-settings.json';
     const NEW_BADGE_MAX_AGE_DAYS = 30;
     const BADGE_ICON_PATHS = {
-        new: 'icons/badges/new.png',
-        sale: 'icons/badges/sale.png',
-        popular: 'icons/badges/popular.png'
+        new: 'icons/badges/new.webp',
+        sale: 'icons/badges/sale.webp',
+        popular: 'icons/badges/popular.webp'
     };
     const analytics = window.SidequestAnalytics || null;
     const cart = window.SidequestCart || null;
@@ -250,6 +250,27 @@ if (catalogueGrid && loadMoreProductsButton) {
         return placeholder;
     }
 
+    function getCardImagePath(imagePath) {
+        if (typeof imagePath !== 'string') {
+            return '';
+        }
+
+        const trimmedPath = imagePath.trim();
+        if (!trimmedPath) {
+            return '';
+        }
+
+        const extensionMatch = trimmedPath.match(/(\.[^./?#]+)([?#].*)?$/);
+        if (!extensionMatch) {
+            return `${trimmedPath}-card`;
+        }
+
+        const extensionStart = extensionMatch.index;
+        const extension = extensionMatch[1];
+        const suffix = extensionMatch[2] || '';
+        return `${trimmedPath.slice(0, extensionStart)}-card${extension}${suffix}`;
+    }
+
     function createProductImageElement(productName, imagePath) {
         if (!imagePath) {
             return createPlaceholderImageElement();
@@ -257,11 +278,18 @@ if (catalogueGrid && loadMoreProductsButton) {
 
         const image = document.createElement('img');
         image.className = 'catalogue-image catalogue-image-media';
-        image.src = imagePath;
+        const fallbackImagePath = imagePath;
+        image.src = getCardImagePath(imagePath) || imagePath;
         image.alt = productName || 'Product image';
         image.loading = 'lazy';
+        let fallbackAttempted = false;
 
         image.addEventListener('error', () => {
+            if (!fallbackAttempted && fallbackImagePath) {
+                fallbackAttempted = true;
+                image.src = fallbackImagePath;
+                return;
+            }
             image.replaceWith(createPlaceholderImageElement());
         });
 

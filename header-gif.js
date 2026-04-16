@@ -1,16 +1,12 @@
-const GIFS_DIRECTORY = 'gifs/';
-const GIF_MANIFEST_PATH = 'gifs-manifest.json';
+const HEADER_VIDEOS_DIRECTORY = 'headers/';
+const HEADER_MANIFEST_PATH = 'headers-manifest.json';
+const HEADER_VIDEO_CLASS_NAME = 'header-background-video';
 
-function setHeaderGifBackground(header, gifPath) {
-    header.style.backgroundImage =
-        `linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)), url("${gifPath}")`;
-    header.style.backgroundSize = 'cover';
-    header.style.backgroundPosition = 'center';
-    header.style.backgroundRepeat = 'no-repeat';
-}
-
-function clearHeaderGifBackground(header) {
-    header.style.backgroundImage = 'none';
+function clearHeaderVideoBackground(header) {
+    const existingVideo = header.querySelector(`.${HEADER_VIDEO_CLASS_NAME}`);
+    if (existingVideo) {
+        existingVideo.remove();
+    }
 }
 
 function shuffleArray(values) {
@@ -22,34 +18,65 @@ function shuffleArray(values) {
     return result;
 }
 
-function canLoadImage(path) {
-    return new Promise((resolve) => {
-        const image = new Image();
-        image.onload = () => resolve(true);
-        image.onerror = () => resolve(false);
-        image.src = path;
-    });
-}
-
-async function loadGifManifest() {
+async function loadHeaderManifest() {
     try {
-        const response = await fetch(GIF_MANIFEST_PATH);
+        const response = await fetch(HEADER_MANIFEST_PATH);
         if (!response.ok) {
             return [];
         }
 
         const manifest = await response.json();
-        if (!manifest || !Array.isArray(manifest.gifs)) {
+        if (!manifest || !Array.isArray(manifest.videos)) {
             return [];
         }
 
-        return manifest.gifs
+        return manifest.videos
             .filter((name) => typeof name === 'string')
             .map((name) => name.trim())
-            .filter((name) => /\.gif$/i.test(name));
+            .filter((name) => /\.(mp4|webm|ogg)$/i.test(name));
     } catch (error) {
         return [];
     }
+}
+
+function createHeaderVideoElement(videoPath) {
+    const video = document.createElement('video');
+    video.className = HEADER_VIDEO_CLASS_NAME;
+    video.autoplay = true;
+    video.loop = true;
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    video.setAttribute('aria-hidden', 'true');
+    video.setAttribute('playsinline', '');
+    video.setAttribute('muted', '');
+    video.preload = 'metadata';
+    video.src = videoPath;
+    return video;
+}
+
+function tryHeaderVideoCandidate(header, candidates, index) {
+    if (index >= candidates.length) {
+        clearHeaderVideoBackground(header);
+        return;
+    }
+
+    const videoPath = `${HEADER_VIDEOS_DIRECTORY}${candidates[index]}`;
+    const video = createHeaderVideoElement(videoPath);
+
+    video.addEventListener('loadeddata', () => {
+        const autoplayPromise = video.play();
+        if (autoplayPromise && typeof autoplayPromise.catch === 'function') {
+            autoplayPromise.catch(() => {});
+        }
+    }, { once: true });
+
+    video.addEventListener('error', () => {
+        video.remove();
+        tryHeaderVideoCandidate(header, candidates, index + 1);
+    }, { once: true });
+
+    header.prepend(video);
 }
 
 async function applyRandomHeaderGif() {
@@ -58,24 +85,16 @@ async function applyRandomHeaderGif() {
         return;
     }
 
-    const gifNames = await loadGifManifest();
-    if (gifNames.length === 0) {
-        clearHeaderGifBackground(header);
+    const videoNames = await loadHeaderManifest();
+    if (videoNames.length === 0) {
+        clearHeaderVideoBackground(header);
         return;
     }
 
-    const candidates = shuffleArray(gifNames);
-    for (const gifName of candidates) {
-        const gifPath = `${GIFS_DIRECTORY}${gifName}`;
-        // Skip missing/corrupt files so a bad file never leaves the header black.
-        const isLoadable = await canLoadImage(gifPath);
-        if (isLoadable) {
-            setHeaderGifBackground(header, gifPath);
-            return;
-        }
-    }
+    clearHeaderVideoBackground(header);
 
-    clearHeaderGifBackground(header);
+    const candidates = shuffleArray(videoNames);
+    tryHeaderVideoCandidate(header, candidates, 0);
 }
 
 applyRandomHeaderGif();

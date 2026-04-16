@@ -204,6 +204,27 @@ function createPlaceholderImage() {
     return placeholder;
 }
 
+function getCardImagePath(imagePath) {
+    if (typeof imagePath !== 'string') {
+        return '';
+    }
+
+    const trimmedPath = imagePath.trim();
+    if (!trimmedPath) {
+        return '';
+    }
+
+    const extensionMatch = trimmedPath.match(/(\.[^./?#]+)([?#].*)?$/);
+    if (!extensionMatch) {
+        return `${trimmedPath}-card`;
+    }
+
+    const extensionStart = extensionMatch.index;
+    const extension = extensionMatch[1];
+    const suffix = extensionMatch[2] || '';
+    return `${trimmedPath.slice(0, extensionStart)}-card${extension}${suffix}`;
+}
+
 function createProductImage(productName, imagePath) {
     if (!imagePath) {
         return createPlaceholderImage();
@@ -211,12 +232,19 @@ function createProductImage(productName, imagePath) {
 
     const image = document.createElement('img');
     image.className = 'catalogue-image catalogue-image-media';
-    image.src = imagePath;
+    const fallbackImagePath = imagePath;
+    image.src = getCardImagePath(imagePath) || imagePath;
     image.alt = productName || 'Featured product';
     image.loading = 'lazy';
     image.decoding = 'async';
+    let fallbackAttempted = false;
 
     image.addEventListener('error', () => {
+        if (!fallbackAttempted && fallbackImagePath) {
+            fallbackAttempted = true;
+            image.src = fallbackImagePath;
+            return;
+        }
         image.replaceWith(createPlaceholderImage());
     });
 

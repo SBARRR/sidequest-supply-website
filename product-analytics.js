@@ -1,5 +1,8 @@
 (function initializeSidequestAnalytics(globalScope) {
     const API_ENDPOINT = '/.netlify/functions/product-scores';
+    const SCORES_CACHE_SESSION_KEY = 'sidequest:scores-cache-v1';
+    const SCORES_CACHE_MAX_AGE_MS = 15 * 60 * 1000;
+    const VIEW_TRACKED_SESSION_PREFIX = 'sidequest:viewed:';
     const POINTS = {
         view: 1,
         addToCart: 3,
@@ -12,6 +15,8 @@
     };
 
     let scoreMapCache = {};
+    let scoreCacheUpdatedAtMs = 0;
+    let activeScoreFetchPromise = null;
 
     function normalizeProductId(productId) {
         if (typeof productId !== 'string') {
@@ -50,6 +55,90 @@
         });
 
         return normalized;
+    }
+
+    function getSessionStorage() {
+        try {
+            if (!globalScope.sessionStorage) {
+                return null;
+            }
+            return globalScope.sessionStorage;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function loadScoresFromSessionCache() {
+        const sessionStorage = getSessionStorage();
+        if (!sessionStorage) {
+            return;
+        }
+
+        try {
+            const rawPayload = sessionStorage.getItem(SCORES_CACHE_SESSION_KEY);
+            if (!rawPayload) {
+                return;
+            }
+
+            const payload = JSON.parse(rawPayload);
+            if (!payload || typeof payload !== 'object') {
+                return;
+            }
+
+            scoreMapCache = normalizeScores(payload.scores);
+            scoreCacheUpdatedAtMs = toValidNumber(payload.updatedAt) || 0;
+        } catch (error) {
+            // Ignore malformed cache payloads.
+        }
+    }
+
+    function persistScoresToSessionCache() {
+        const sessionStorage = getSessionStorage();
+        if (!sessionStorage) {
+            return;
+        }
+
+        try {
+            sessionStorage.setItem(SCORES_CACHE_SESSION_KEY, JSON.stringify({
+                updatedAt: scoreCacheUpdatedAtMs,
+                scores: scoreMapCache
+            }));
+        } catch (error) {
+            // Ignore storage quota and serialization errors.
+        }
+    }
+
+    function hasFreshScoreCache() {
+        if (scoreCacheUpdatedAtMs <= 0) {
+            return false;
+        }
+        return Date.now() - scoreCacheUpdatedAtMs <= SCORES_CACHE_MAX_AGE_MS;
+    }
+
+    function hasTrackedViewInSession(productId) {
+        const sessionStorage = getSessionStorage();
+        if (!sessionStorage || !productId) {
+            return false;
+        }
+
+        try {
+            return sessionStorage.getItem(`${VIEW_TRACKED_SESSION_PREFIX}${productId}`) === '1';
+        } catch (error) {
+            return false;
+        }
+    }
+
+    function markTrackedViewInSession(productId) {
+        const sessionStorage = getSessionStorage();
+        if (!sessionStorage || !productId) {
+            return;
+        }
+
+        try {
+            sessionStorage.setItem(`${VIEW_TRACKED_SESSION_PREFIX}${productId}`, '1');
+        } catch (error) {
+            // Ignore storage errors.
+        }
     }
 
     function computeTopProductIds(limit = 3) {
@@ -95,11 +184,30 @@
 
             const payload = await response.json();
             scoreMapCache = normalizeScores(payload.scores);
+            scoreCacheUpdatedAtMs = Date.now();
+            persistScoresToSessionCache();
             emitScoresUpdatedEvent('', 0, 0, 'sync');
             return true;
         } catch (error) {
             return false;
         }
+    }
+
+    function ensureScoresLoaded(forceRefresh = false) {
+        if (!forceRefresh && hasFreshScoreCache()) {
+            return Promise.resolve(true);
+        }
+
+        if (activeScoreFetchPromise) {
+            return activeScoreFetchPromise;
+        }
+
+        activeScoreFetchPromise = fetchScoresFromServer()
+            .finally(() => {
+                activeScoreFetchPromise = null;
+            });
+
+        return activeScoreFetchPromise;
     }
 
     async function trackEvent(productId, clientAction) {
@@ -129,6 +237,8 @@
 
             const payload = await response.json();
             scoreMapCache = normalizeScores(payload.scores);
+            scoreCacheUpdatedAtMs = Date.now();
+            persistScoresToSessionCache();
             const nextScore = toValidNumber(scoreMapCache[safeProductId]);
             emitScoresUpdatedEvent(safeProductId, points, nextScore, `${action}:server`);
             return nextScore;
@@ -137,12 +247,27 @@
         }
     }
 
-    fetchScoresFromServer();
+    loadScoresFromSessionCache();
 
     globalScope.SidequestAnalytics = {
         POINTS,
         trackProductView(productId) {
-            return trackEvent(productId, 'view');
+            const safeProductId = normalizeProductId(productId);
+            if (!safeProductId) {
+                return Promise.resolve(0);
+            }
+
+            if (hasTrackedViewInSession(safeProductId)) {
+                return Promise.resolve(toValidNumber(scoreMapCache[safeProductId]));
+            }
+
+            return trackEvent(safeProductId, 'view')
+                .then((nextScore) => {
+                    if (toValidNumber(nextScore) > 0) {
+                        markTrackedViewInSession(safeProductId);
+                    }
+                    return nextScore;
+                });
         },
         trackAddToCart(productId) {
             return trackEvent(productId, 'addToCart');
@@ -151,12 +276,14 @@
             return trackEvent(productId, 'checkout');
         },
         refreshScores() {
-            return fetchScoresFromServer();
+            return ensureScoresLoaded(true);
         },
         getTopProductIdsByScore(limit = 3) {
+            ensureScoresLoaded(false);
             return computeTopProductIds(limit);
         },
         getProductScore(productId) {
+            ensureScoresLoaded(false);
             const safeProductId = normalizeProductId(productId);
             if (!safeProductId) {
                 return 0;

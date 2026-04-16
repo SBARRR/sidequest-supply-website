@@ -320,7 +320,49 @@ function createPlaceholderMedia(className) {
     return placeholder;
 }
 
-function createMediaElement(imagePath, className, altText) {
+function getThumbnailImagePath(imagePath) {
+    if (typeof imagePath !== 'string') {
+        return '';
+    }
+
+    const trimmedPath = imagePath.trim();
+    if (!trimmedPath) {
+        return '';
+    }
+
+    const extensionMatch = trimmedPath.match(/(\.[^./?#]+)([?#].*)?$/);
+    if (!extensionMatch) {
+        return `${trimmedPath}-thumb`;
+    }
+
+    const extensionStart = extensionMatch.index;
+    const extension = extensionMatch[1];
+    const suffix = extensionMatch[2] || '';
+    return `${trimmedPath.slice(0, extensionStart)}-thumb${extension}${suffix}`;
+}
+
+function getCardImagePath(imagePath) {
+    if (typeof imagePath !== 'string') {
+        return '';
+    }
+
+    const trimmedPath = imagePath.trim();
+    if (!trimmedPath) {
+        return '';
+    }
+
+    const extensionMatch = trimmedPath.match(/(\.[^./?#]+)([?#].*)?$/);
+    if (!extensionMatch) {
+        return `${trimmedPath}-card`;
+    }
+
+    const extensionStart = extensionMatch.index;
+    const extension = extensionMatch[1];
+    const suffix = extensionMatch[2] || '';
+    return `${trimmedPath.slice(0, extensionStart)}-card${extension}${suffix}`;
+}
+
+function createMediaElement(imagePath, className, altText, fallbackImagePath = '') {
     if (!imagePath) {
         return createPlaceholderMedia(`${className} ${className}-placeholder`);
     }
@@ -330,7 +372,13 @@ function createMediaElement(imagePath, className, altText) {
     image.src = imagePath;
     image.alt = altText;
     image.loading = 'lazy';
+    let fallbackAttempted = false;
     image.addEventListener('error', () => {
+        if (!fallbackAttempted && fallbackImagePath) {
+            fallbackAttempted = true;
+            image.src = fallbackImagePath;
+            return;
+        }
         image.replaceWith(createPlaceholderMedia(`${className} ${className}-placeholder`));
     });
     return image;
@@ -449,20 +497,28 @@ function renderMediaGallery(mediaList, productName) {
 
     const safeMediaList = mediaList.length > 0 ? mediaList : [''];
     let activeMedia = safeMediaList[0];
+    const hasAdditionalGalleryMedia = safeMediaList.length > 1;
 
     renderMainMedia(activeMedia, productName);
     productThumbGallery.innerHTML = '';
+    productThumbGallery.hidden = !hasAdditionalGalleryMedia;
+
+    if (!hasAdditionalGalleryMedia) {
+        return;
+    }
 
     safeMediaList.forEach((imagePath, index) => {
         const thumbButton = document.createElement('button');
         thumbButton.type = 'button';
         thumbButton.className = `product-thumb${index === 0 ? ' active' : ''}`;
         thumbButton.setAttribute('aria-label', `Select image ${index + 1}`);
+        const thumbImagePath = getThumbnailImagePath(imagePath);
 
         const thumbMedia = createMediaElement(
-            imagePath,
+            thumbImagePath || imagePath,
             'product-thumb-image',
-            `${productName || 'Product'} thumbnail ${index + 1}`
+            `${productName || 'Product'} thumbnail ${index + 1}`,
+            imagePath
         );
         thumbButton.appendChild(thumbMedia);
 
@@ -683,9 +739,10 @@ function createRelatedCard(product) {
     card.href = `product.html?id=${encodeURIComponent(product.id)}`;
 
     const media = createMediaElement(
-        product.mainImage,
+        getCardImagePath(product.mainImage) || product.mainImage,
         'related-product-image',
-        product.name
+        product.name,
+        product.mainImage
     );
 
     const title = document.createElement('h4');

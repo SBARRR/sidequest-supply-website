@@ -51,7 +51,7 @@
     Cache-Control = "public, max-age=2592000, immutable"
 
 [[headers]]
-  for = "/gifs/*"
+  for = "/headers/*"
   [headers.values]
     Cache-Control = "public, max-age=2592000, immutable"
 
