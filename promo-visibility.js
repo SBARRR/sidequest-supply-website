@@ -14,7 +14,7 @@ function normalizeRuleIds(value) {
 
 async function loadPromoSettings() {
     try {
-        const response = await fetch(CATALOGUE_SETTINGS_PATH);
+        const response = await fetch(CATALOGUE_SETTINGS_PATH, { cache: 'no-store' });
         if (!response.ok) {
             throw new Error(`Failed to load catalogue settings (${response.status})`);
         }

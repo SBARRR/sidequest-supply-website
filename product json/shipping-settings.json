@@ -1,0 +1,12 @@
+{
+  "mailer_weight_oz": 0.25,
+  "tiers": [
+    { "max_weight_oz": 4, "cost": 5.95 },
+    { "max_weight_oz": 8, "cost": 6.95 },
+    { "max_weight_oz": 12, "cost": 7.49 },
+    { "max_weight_oz": 15, "cost": 8.49 },
+    { "max_weight_oz": 16, "cost": 9.95 },
+    { "max_weight_oz": 32, "cost": 11.95 }
+  ],
+  "heavy_shipping_cost": 15.75
+}

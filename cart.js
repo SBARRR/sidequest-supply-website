@@ -3,14 +3,18 @@
     const PRODUCTS_JSON_PATH = 'product%20json/products.json';
     const PROMO_RULES_JSON_PATH = 'product%20json/promo-rules.json';
     const CATALOGUE_SETTINGS_PATH = 'product%20json/catalogue-settings.json';
-    const MAILER_WEIGHT_OZ = 0.25;
+    const SHIPPING_SETTINGS_PATH = 'product%20json/shipping-settings.json';
+    const DEFAULT_MAILER_WEIGHT_OZ = 0.25;
     const TAX_RATE = 0.07;
-    const SHIPPING_TIERS = [
-        { maxWeightOz: 8, cost: 7.95 },
-        { maxWeightOz: 16, cost: 10.95 },
-        { maxWeightOz: 32, cost: 14.95 }
+    const DEFAULT_SHIPPING_TIERS = [
+        { maxWeightOz: 4, cost: 5.95 },
+        { maxWeightOz: 8, cost: 6.95 },
+        { maxWeightOz: 12, cost: 7.49 },
+        { maxWeightOz: 15, cost: 8.49 },
+        { maxWeightOz: 16, cost: 9.95 },
+        { maxWeightOz: 32, cost: 11.95 }
     ];
-    const HEAVY_SHIPPING_COST = 20.95;
+    const DEFAULT_HEAVY_SHIPPING_COST = 15.75;
     const BUNDLE_RULES = {
         keychain: [
             { keychains: 4, sleeves: 0, priceCents: 1000 },
@@ -39,6 +43,9 @@
     let promosEnabled = false;
     let enabledPromoRuleIds = null;
     let metadataLoaded = false;
+    let mailerWeightOz = DEFAULT_MAILER_WEIGHT_OZ;
+    let shippingTiers = [...DEFAULT_SHIPPING_TIERS];
+    let heavyShippingCost = DEFAULT_HEAVY_SHIPPING_COST;
 
     function toValidNumber(value) {
         if (typeof value === 'number' && Number.isFinite(value)) {
@@ -130,6 +137,27 @@
         );
     }
 
+    function normalizeShippingTiers(value) {
+        if (!Array.isArray(value)) {
+            return null;
+        }
+
+        const normalized = value
+            .map((tier) => {
+                const maxWeightOz = toValidNumber(tier?.max_weight_oz ?? tier?.maxWeightOz);
+                const cost = toValidNumber(tier?.cost);
+                if (typeof maxWeightOz !== 'number' || maxWeightOz <= 0 || typeof cost !== 'number' || cost < 0) {
+                    return null;
+                }
+
+                return { maxWeightOz, cost };
+            })
+            .filter(Boolean)
+            .sort((a, b) => a.maxWeightOz - b.maxWeightOz);
+
+        return normalized.length > 0 ? normalized : null;
+    }
+
     function buildItemKey(productId, variantId) {
         const safeProductId = normalizeString(productId);
         const safeVariantId = normalizeString(variantId);
@@ -138,7 +166,7 @@
 
     async function loadProductMetadata() {
         try {
-            const response = await fetch(PRODUCTS_JSON_PATH);
+            const response = await fetch(PRODUCTS_JSON_PATH, { cache: 'no-store' });
             if (!response.ok) {
                 return;
             }
@@ -168,7 +196,7 @@
 
     async function loadPromoRules() {
         try {
-            const response = await fetch(PROMO_RULES_JSON_PATH);
+            const response = await fetch(PROMO_RULES_JSON_PATH, { cache: 'no-store' });
             if (!response.ok) {
                 return;
             }
@@ -197,7 +225,7 @@
 
     async function loadCatalogueSettings() {
         try {
-            const response = await fetch(CATALOGUE_SETTINGS_PATH);
+            const response = await fetch(CATALOGUE_SETTINGS_PATH, { cache: 'no-store' });
             if (!response.ok) {
                 return;
             }
@@ -211,11 +239,40 @@
         }
     }
 
+    async function loadShippingSettings() {
+        try {
+            const response = await fetch(SHIPPING_SETTINGS_PATH, { cache: 'no-store' });
+            if (!response.ok) {
+                return;
+            }
+
+            const settings = await response.json();
+            const nextMailerWeightOz = toValidNumber(settings?.mailer_weight_oz ?? settings?.mailerWeightOz);
+            const nextShippingTiers = normalizeShippingTiers(settings?.tiers);
+            const nextHeavyShippingCost = toValidNumber(settings?.heavy_shipping_cost ?? settings?.heavyShippingCost);
+
+            if (typeof nextMailerWeightOz === 'number' && nextMailerWeightOz >= 0) {
+                mailerWeightOz = nextMailerWeightOz;
+            }
+
+            if (nextShippingTiers) {
+                shippingTiers = nextShippingTiers;
+            }
+
+            if (typeof nextHeavyShippingCost === 'number' && nextHeavyShippingCost >= 0) {
+                heavyShippingCost = nextHeavyShippingCost;
+            }
+        } catch (error) {
+            // Keep default shipping values if settings cannot be loaded.
+        }
+    }
+
     async function loadCartMetadata() {
         await Promise.allSettled([
             loadProductMetadata(),
             loadPromoRules(),
-            loadCatalogueSettings()
+            loadCatalogueSettings(),
+            loadShippingSettings()
         ]);
         metadataLoaded = true;
     }
@@ -328,7 +385,7 @@
             return sum + (getItemWeightOz(item) * safeQuantity);
         }, 0);
 
-        return itemsWeight + MAILER_WEIGHT_OZ;
+        return itemsWeight + mailerWeightOz;
     }
 
     function getShippingCost(weightOz) {
@@ -336,13 +393,20 @@
             return 0;
         }
 
-        for (const tier of SHIPPING_TIERS) {
+        for (const tier of shippingTiers) {
             if (weightOz <= tier.maxWeightOz) {
                 return tier.cost;
             }
         }
 
-        return HEAVY_SHIPPING_COST;
+        return heavyShippingCost;
+    }
+
+    function getRoundedShippingWeightOz(weightOz) {
+        if (weightOz <= 0) {
+            return 0;
+        }
+        return Math.ceil(weightOz);
     }
 
     function getTaxAmount(subtotal, shippingCost) {
@@ -476,7 +540,8 @@
         const regularSubtotalCents = getCartSubtotalCents(items);
         const bundlePricing = getBestEverydayBundleCents(items);
         const subtotal = centsToDollars(regularSubtotalCents - bundlePricing.savingsCents);
-        const shippingCost = getShippingCost(getTotalWeightOz(items));
+        const roundedShippingWeightOz = getRoundedShippingWeightOz(getTotalWeightOz(items));
+        const shippingCost = getShippingCost(roundedShippingWeightOz);
         const taxAmount = getTaxAmount(subtotal, shippingCost);
 
         return {

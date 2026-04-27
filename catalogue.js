@@ -961,7 +961,7 @@ if (catalogueGrid && loadMoreProductsButton) {
 
     async function loadProductsFromJson() {
         try {
-            const response = await fetch(PRODUCTS_JSON_PATH);
+            const response = await fetch(PRODUCTS_JSON_PATH, { cache: 'no-store' });
             if (!response.ok) {
                 throw new Error(`Failed to load products.json (${response.status})`);
             }
@@ -976,7 +976,7 @@ if (catalogueGrid && loadMoreProductsButton) {
 
     async function loadCatalogueSettings() {
         try {
-            const response = await fetch(CATALOGUE_SETTINGS_PATH);
+            const response = await fetch(CATALOGUE_SETTINGS_PATH, { cache: 'no-store' });
             if (!response.ok) {
                 throw new Error(`Failed to load catalogue-settings.json (${response.status})`);
             }

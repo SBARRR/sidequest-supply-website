@@ -41,6 +41,16 @@ const COLOR_SWATCH_MAP = [
     { token: 'silver', color: '#B9BCC3' }
 ];
 
+function normalizeSwatchColors(colorsValue) {
+    if (!Array.isArray(colorsValue)) {
+        return [];
+    }
+
+    return colorsValue
+        .filter((color) => typeof color === 'string' && color.trim() !== '')
+        .map((color) => color.trim());
+}
+
 const analytics = window.SidequestAnalytics || null;
 const cart = window.SidequestCart || null;
 const cartFeedback = window.SidequestCartFeedback || null;
@@ -77,6 +87,14 @@ function normalizeCategoryKey(categoryValue) {
     }
 
     return categoryValue.trim().toLowerCase();
+}
+
+function normalizeString(value) {
+    if (typeof value !== 'string') {
+        return '';
+    }
+
+    return value.trim();
 }
 
 function isCustomOrderProduct(product) {
@@ -121,8 +139,9 @@ function getSpend12ModelOptions(product, allProducts) {
         }
 
         const baseColorLabel = detectColorLabelFromId(candidate.id);
-        const baseLabel = baseColorLabel
-            ? `${candidate.name} - ${baseColorLabel}`
+        const baseSwatch = buildSwatchPresentation(candidate, candidate.id);
+        const baseLabel = baseSwatch.label
+            ? `${candidate.name} - ${baseSwatch.label}`
             : candidate.name;
 
         options.push({
@@ -136,9 +155,9 @@ function getSpend12ModelOptions(product, allProducts) {
             const variantId = typeof safeVariant.id === 'string' && safeVariant.id.trim() !== ''
                 ? safeVariant.id.trim()
                 : `${candidate.id}-variant-${index + 1}`;
-            const colorLabel = detectColorLabelFromId(variantId);
-            const variantLabel = colorLabel
-                ? `${candidate.name} - ${colorLabel}`
+            const variantSwatch = buildSwatchPresentation(safeVariant, variantId);
+            const variantLabel = variantSwatch.label
+                ? `${candidate.name} - ${variantSwatch.label}`
                 : `${candidate.name} ${index + 2}`;
 
             options.push({
@@ -309,6 +328,49 @@ function detectColorLabelFromId(idValue) {
     return match ? match[1] : '';
 }
 
+function buildSwatchPresentation(rawEntry, fallbackId) {
+    const explicitColors = normalizeSwatchColors(rawEntry?.swatchColors ?? rawEntry?.swatch_colors);
+    const explicitLabel = normalizeString(rawEntry?.swatchLabel ?? rawEntry?.swatch_label);
+
+    if (explicitColors.length > 0) {
+        return {
+            colors: explicitColors,
+            label: explicitLabel || explicitColors.join(' / ')
+        };
+    }
+
+    const fallbackColor = detectColorFromId(fallbackId);
+    const fallbackLabel = detectColorLabelFromId(fallbackId);
+    return {
+        colors: fallbackColor ? [fallbackColor] : [],
+        label: fallbackLabel
+    };
+}
+
+function getSwatchBackground(colors) {
+    if (!Array.isArray(colors) || colors.length === 0) {
+        return '';
+    }
+
+    if (colors.length === 1) {
+        return colors[0];
+    }
+
+    if (colors.length === 2) {
+        return `linear-gradient(90deg, ${colors[0]} 0 50%, ${colors[1]} 50% 100%)`;
+    }
+
+    const limitedColors = colors.slice(0, 3);
+    const segmentSize = 100 / limitedColors.length;
+    const stops = limitedColors.map((color, index) => {
+        const start = (index * segmentSize).toFixed(2);
+        const end = ((index + 1) * segmentSize).toFixed(2);
+        return `${color} ${start}% ${end}%`;
+    });
+
+    return `conic-gradient(${stops.join(', ')})`;
+}
+
 function buildMediaList(mainImage, galleryImages) {
     return dedupeImageList([normalizeImagePath(mainImage), ...normalizeImageList(galleryImages)]);
 }
@@ -425,19 +487,32 @@ function normalizeProducts(rawProducts) {
             createdAtTimestamp,
             isManuallyPopular,
             available,
+            swatchLabel: normalizeString(safeProduct.swatch_label),
+            swatchColors: normalizeSwatchColors(safeProduct.swatch_colors),
             mainImage: normalizeImagePath(safeProduct.main_image),
             galleryImages: normalizeImageList(safeProduct.gallery_images),
-            variants: Array.isArray(safeProduct.variants) ? safeProduct.variants : []
+            variants: Array.isArray(safeProduct.variants)
+                ? safeProduct.variants.map((variant) => {
+                    const safeVariant = typeof variant === 'object' && variant !== null ? variant : {};
+                    return {
+                        ...safeVariant,
+                        swatchLabel: normalizeString(safeVariant.swatch_label),
+                        swatchColors: normalizeSwatchColors(safeVariant.swatch_colors)
+                    };
+                })
+                : []
         };
     });
 }
 
 function buildVariantOptions(product) {
+    const baseSwatch = buildSwatchPresentation(product, product.id);
     const baseVariant = {
         id: product.id,
         label: `${product.name} 1`,
-        color: detectColorFromId(product.id),
-        colorLabel: detectColorLabelFromId(product.id),
+        color: baseSwatch.colors[0] || '',
+        swatchColors: baseSwatch.colors,
+        colorLabel: baseSwatch.label,
         priceValue: product.priceValue,
         compareAtValue: product.compareAtValue,
         mediaList: buildMediaList(product.mainImage, product.galleryImages)
@@ -457,12 +532,14 @@ function buildVariantOptions(product) {
             normalizeImageList(safeVariant.gallery_images)
         );
         const fallbackMediaList = buildMediaList(product.mainImage, product.galleryImages);
+        const variantSwatch = buildSwatchPresentation(safeVariant, variantId);
 
         return {
             id: variantId,
             label: `${product.name} ${index + 2}`,
-            color: detectColorFromId(variantId),
-            colorLabel: detectColorLabelFromId(variantId),
+            color: variantSwatch.colors[0] || '',
+            swatchColors: variantSwatch.colors,
+            colorLabel: variantSwatch.label,
             priceValue: resolvedPriceValue,
             compareAtValue: resolvedCompareAtValue,
             mediaList: variantMediaList.length > 0 ? variantMediaList : fallbackMediaList
@@ -473,7 +550,8 @@ function buildVariantOptions(product) {
 }
 
 function shouldRenderColorVariantPicker(variantOptions) {
-    return variantOptions.length > 0 && variantOptions.every((variant) => variant.color !== '');
+    return variantOptions.length > 0
+        && variantOptions.every((variant) => Array.isArray(variant.swatchColors) && variant.swatchColors.length > 0);
 }
 
 function renderMainMedia(imagePath, productName) {
@@ -571,7 +649,10 @@ function renderVariantPicker(variantOptions, productName, pickerType, onVariantC
         if (pickerType === 'color') {
             const swatchColor = document.createElement('span');
             swatchColor.className = 'variant-swatch-color';
-            swatchColor.style.backgroundColor = variant.color;
+            const swatchBackground = getSwatchBackground(variant.swatchColors);
+            if (swatchBackground) {
+                swatchColor.style.background = swatchBackground;
+            }
             variantButton.appendChild(swatchColor);
         } else {
             variantButton.textContent = variant.label;
@@ -692,7 +773,7 @@ function setupProductActionButtons() {
                     : 'style';
                 const colorLabel = activeProductHasVariants
                     && pickerType === 'color'
-                    ? detectColorLabelFromId(activeVariantForCart.id)
+                    ? normalizeString(activeVariantForCart.colorLabel)
                     : '';
                 const styleLabel = activeProductHasVariants
                     && pickerType === 'style'
@@ -1025,7 +1106,7 @@ async function initializeProductPage() {
     setupProductActionButtons();
 
     try {
-        const response = await fetch(PRODUCTS_JSON_PATH);
+        const response = await fetch(PRODUCTS_JSON_PATH, { cache: 'no-store' });
         if (!response.ok) {
             throw new Error(`Failed to load products.json (${response.status})`);
         }

@@ -5,15 +5,19 @@
         return;
     }
     const PRODUCTS_JSON_PATH = 'product%20json/products.json';
+    const SHIPPING_SETTINGS_PATH = 'product%20json/shipping-settings.json';
     const TALLY_CHECKOUT_URL = 'https://tally.so/r/GxJkoQ';
-    const MAILER_WEIGHT_OZ = 0.25;
+    const DEFAULT_MAILER_WEIGHT_OZ = 0.25;
     const TAX_RATE = 0.07;
-    const SHIPPING_TIERS = [
-        { maxWeightOz: 8, cost: 7.95 },
-        { maxWeightOz: 16, cost: 10.95 },
-        { maxWeightOz: 32, cost: 14.95 }
+    const DEFAULT_SHIPPING_TIERS = [
+        { maxWeightOz: 4, cost: 5.95 },
+        { maxWeightOz: 8, cost: 6.95 },
+        { maxWeightOz: 12, cost: 7.49 },
+        { maxWeightOz: 15, cost: 8.49 },
+        { maxWeightOz: 16, cost: 9.95 },
+        { maxWeightOz: 32, cost: 11.95 }
     ];
-    const HEAVY_SHIPPING_COST = 20.95;
+    const DEFAULT_HEAVY_SHIPPING_COST = 15.75;
 
     const headerCartButtons = Array.from(document.querySelectorAll('.header-cart-button'));
     if (headerCartButtons.length === 0) {
@@ -68,6 +72,9 @@
     const productNameById = new Map();
     const selectedModelNameById = new Map();
     const productCategoryById = new Map();
+    let mailerWeightOz = DEFAULT_MAILER_WEIGHT_OZ;
+    let shippingTiers = [...DEFAULT_SHIPPING_TIERS];
+    let heavyShippingCost = DEFAULT_HEAVY_SHIPPING_COST;
 
     const BUNDLE_RULES = {
         keychain: [
@@ -122,6 +129,27 @@
             .trim();
     }
 
+    function normalizeShippingTiers(value) {
+        if (!Array.isArray(value)) {
+            return null;
+        }
+
+        const normalized = value
+            .map((tier) => {
+                const maxWeightOz = toValidNumber(tier?.max_weight_oz ?? tier?.maxWeightOz);
+                const cost = toValidNumber(tier?.cost);
+                if (typeof maxWeightOz !== 'number' || maxWeightOz <= 0 || typeof cost !== 'number' || cost < 0) {
+                    return null;
+                }
+
+                return { maxWeightOz, cost };
+            })
+            .filter(Boolean)
+            .sort((a, b) => a.maxWeightOz - b.maxWeightOz);
+
+        return normalized.length > 0 ? normalized : null;
+    }
+
     function detectColorLabelFromId(idValue) {
         const normalizedId = String(idValue || '').toLowerCase();
         const tokenToLabelMap = [
@@ -148,6 +176,35 @@
         return match ? match[1] : '';
     }
 
+    function normalizeSwatchColors(colorsValue) {
+        if (!Array.isArray(colorsValue)) {
+            return [];
+        }
+
+        return colorsValue
+            .filter((color) => typeof color === 'string' && color.trim() !== '')
+            .map((color) => color.trim());
+    }
+
+    function getSwatchLabel(rawEntry, fallbackId) {
+        const explicitLabel = typeof rawEntry?.swatch_label === 'string'
+            ? rawEntry.swatch_label.trim()
+            : typeof rawEntry?.swatchLabel === 'string'
+                ? rawEntry.swatchLabel.trim()
+                : '';
+        const explicitColors = normalizeSwatchColors(rawEntry?.swatch_colors ?? rawEntry?.swatchColors);
+
+        if (explicitLabel) {
+            return explicitLabel;
+        }
+
+        if (explicitColors.length > 0) {
+            return explicitColors.join(' / ');
+        }
+
+        return detectColorLabelFromId(fallbackId);
+    }
+
     function getBaseProductIdFromSelectionId(selectionId) {
         if (typeof selectionId !== 'string') {
             return '';
@@ -164,7 +221,7 @@
 
     async function loadProductMetadata() {
         try {
-            const response = await fetch(PRODUCTS_JSON_PATH);
+            const response = await fetch(PRODUCTS_JSON_PATH, { cache: 'no-store' });
             if (!response.ok) {
                 return;
             }
@@ -183,7 +240,7 @@
                 const productName = typeof entry?.name === 'string' ? entry.name.trim() : '';
                 if (productName) {
                     productNameById.set(productId, productName);
-                    const baseColorLabel = detectColorLabelFromId(productId);
+                    const baseColorLabel = getSwatchLabel(entry, productId);
                     const baseModelLabel = baseColorLabel
                         ? `${productName} - ${baseColorLabel}`
                         : productName;
@@ -206,7 +263,7 @@
                     const variantId = typeof safeVariant?.id === 'string' && safeVariant.id.trim() !== ''
                         ? safeVariant.id.trim()
                         : `${productId}-variant-${index + 1}`;
-                    const colorLabel = detectColorLabelFromId(variantId);
+                    const colorLabel = getSwatchLabel(safeVariant, variantId);
                     const variantLabel = colorLabel
                         ? `${productName} - ${colorLabel}`
                         : `${productName} ${index + 2}`;
@@ -217,6 +274,39 @@
             // Keep cart usable even if product metadata fails to load.
         }
     }
+
+    async function loadShippingSettings() {
+        try {
+            const response = await fetch(SHIPPING_SETTINGS_PATH, { cache: 'no-store' });
+            if (!response.ok) {
+                return;
+            }
+
+            const settings = await response.json();
+            const nextMailerWeightOz = toValidNumber(settings?.mailer_weight_oz ?? settings?.mailerWeightOz);
+            const nextShippingTiers = normalizeShippingTiers(settings?.tiers);
+            const nextHeavyShippingCost = toValidNumber(settings?.heavy_shipping_cost ?? settings?.heavyShippingCost);
+
+            if (typeof nextMailerWeightOz === 'number' && nextMailerWeightOz >= 0) {
+                mailerWeightOz = nextMailerWeightOz;
+            }
+
+            if (nextShippingTiers) {
+                shippingTiers = nextShippingTiers;
+            }
+
+            if (typeof nextHeavyShippingCost === 'number' && nextHeavyShippingCost >= 0) {
+                heavyShippingCost = nextHeavyShippingCost;
+            }
+        } catch (error) {
+            // Keep default shipping values if settings cannot be loaded.
+        }
+    }
+
+    Promise.allSettled([
+        loadProductMetadata(),
+        loadShippingSettings()
+    ]);
 
     function getItemWeightOz(item) {
         const promoRule = typeof item?.promoRule === 'string' ? item.promoRule.trim() : '';
@@ -263,7 +353,7 @@
             return sum + (getItemWeightOz(item) * safeQuantity);
         }, 0);
 
-        return itemsWeight + MAILER_WEIGHT_OZ;
+        return itemsWeight + mailerWeightOz;
     }
 
     function getShippingCost(weightOz) {
@@ -271,13 +361,20 @@
             return 0;
         }
 
-        for (const tier of SHIPPING_TIERS) {
+        for (const tier of shippingTiers) {
             if (weightOz <= tier.maxWeightOz) {
                 return tier.cost;
             }
         }
 
-        return HEAVY_SHIPPING_COST;
+        return heavyShippingCost;
+    }
+
+    function getRoundedShippingWeightOz(weightOz) {
+        if (weightOz <= 0) {
+            return 0;
+        }
+        return Math.ceil(weightOz);
     }
 
     function roundCurrency(value) {
@@ -514,7 +611,8 @@
         const bundleSavings = centsToDollars(bundledSubtotal.bundleSavingsCents);
         const regularSubtotal = centsToDollars(bundledSubtotal.regularSubtotalCents);
         const totalWeightOz = getTotalWeightOz(items);
-        const shippingCost = getShippingCost(totalWeightOz);
+        const roundedShippingWeightOz = getRoundedShippingWeightOz(totalWeightOz);
+        const shippingCost = getShippingCost(roundedShippingWeightOz);
         const taxAmount = getTaxAmount(subtotal, shippingCost);
         const total = roundCurrency(subtotal + shippingCost + taxAmount);
 
